@@ -36,22 +36,6 @@ import type {
 	WeightPersistenceAdapterInterface,
 } from '@mikesaintsg/core'
 
-// Re-export shared types from core for convenience
-export type {
-	EngagementState,
-	DwellRecord,
-	PartialDwellRecord,
-	TransitionEvent,
-	EventFilter,
-	DecayAlgorithm,
-	DecayConfig,
-	ActivityTrackerInterface,
-	ActivityTrackerConfig,
-	ActivityTrackerSubscriptions,
-	EventStorePersistenceAdapterInterface,
-	WeightPersistenceAdapterInterface,
-} from '@mikesaintsg/core'
-
 /** Destroy function type derived from Destroyable interface */
 export type DestroyFn = Destroyable['destroy']
 
