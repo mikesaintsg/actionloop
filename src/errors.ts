@@ -50,7 +50,7 @@ export class ActionLoopError extends Error implements ActionLoopErrorInterface {
 		}
 
 		// Maintains proper stack trace in V8 environments
-		if (Error.captureStackTrace) {
+		if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function') {
 			Error.captureStackTrace(this, ActionLoopError)
 		}
 	}

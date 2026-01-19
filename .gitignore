@@ -13,7 +13,7 @@ dist-ssr
 *.local
 
 # Build artifacts
-showcase.html
+# showcase.html - Committed for demo distribution
 
 # Editor directories and files
 .vscode/*
