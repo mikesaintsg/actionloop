@@ -26,6 +26,14 @@ import type {
 	PredictiveGraphInterface,
 	Unsubscribe,
 } from '../../types.js'
+import {
+	DEFAULT_HOT_LOOP_THRESHOLD,
+	DEFAULT_TRAFFIC_THRESHOLD,
+	DEFAULT_DELAY_THRESHOLD_MS,
+	DEFAULT_MIN_REPETITIONS,
+	DEFAULT_MIN_SEQUENCE_LENGTH,
+	DEFAULT_MAX_SEQUENCE_LENGTH,
+} from '../../constants.js'
 
 // ============================================================================
 // Implementation
@@ -34,7 +42,6 @@ import type {
 class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	readonly #procedural: ProceduralGraphInterface
 	readonly #predictive: PredictiveGraphInterface
-	readonly #analysisDepth: number
 
 	readonly #analysisCompleteListeners: Set<
 		(analysisType: string, results: unknown) => void
@@ -44,20 +51,19 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	constructor(
 		procedural: ProceduralGraphInterface,
 		predictive: PredictiveGraphInterface,
-		options: WorkflowAnalyzerOptions = {}
+		_options: WorkflowAnalyzerOptions = {},
 	) {
 		this.#procedural = procedural
-		this. #predictive = predictive
-		this.#analysisDepth = options.analysisDepth ?? 10
+		this.#predictive = predictive
 
 		this.#analysisCompleteListeners = new Set()
 		this.#patternDetectedListeners = new Set()
 
-		if (options.onAnalysisComplete) {
-			this.#analysisCompleteListeners.add(options.onAnalysisComplete)
+		if (_options.onAnalysisComplete) {
+			this.#analysisCompleteListeners.add(_options.onAnalysisComplete)
 		}
-		if (options.onPatternDetected) {
-			this.#patternDetectedListeners.add(options.onPatternDetected)
+		if (_options.onPatternDetected) {
+			this.#patternDetectedListeners.add(_options.onPatternDetected)
 		}
 	}
 
@@ -75,10 +81,10 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 
 	// ---- Loop Detection Methods ----
 
-	findHotLoops(options?:  LoopDetectionOptions): readonly LoopInfo[] {
-		const threshold = options?.threshold ?? 5
+	findHotLoops(options?: LoopDetectionOptions): readonly LoopInfo[] {
+		const threshold = options?.threshold ?? DEFAULT_HOT_LOOP_THRESHOLD
 		const sccs = this.findStronglyConnectedComponents()
-		const loops:  LoopInfo[] = []
+		const loops: LoopInfo[] = []
 
 		for (const scc of sccs) {
 			if (scc.nodes.length < 2) continue
@@ -115,17 +121,18 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	}
 
 	findInfiniteLoops(options?: LoopDetectionOptions): readonly LoopInfo[] {
-		const maxLength = options?.maxLength ?? 100
-		const sccs = this. findStronglyConnectedComponents()
+		// TODO: Use maxLength to limit loop detection depth
+		const _maxLength = options?.maxLength ?? 100
+		const sccs = this.findStronglyConnectedComponents()
 		const loops: LoopInfo[] = []
 
 		for (const scc of sccs) {
 			// Check if SCC has no exit transitions
-			if (scc. exitPoints.length === 0 && scc.nodes.length > 0) {
+			if (scc.exitPoints.length === 0 && scc.nodes.length > 0) {
 				loops.push({
 					nodes: scc.nodes,
 					frequency: 0,
-					avgDuration:  0,
+					avgDuration: 0,
 					loopType: 'infinite' as LoopType,
 					exitTransitions: [],
 				})
@@ -271,12 +278,12 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 					strongConnect(transition.to)
 					lowlinks.set(
 						nodeId,
-						Math.min(lowlinks.get(nodeId)!, lowlinks.get(transition.to)!)
+						Math.min(lowlinks.get(nodeId)!, lowlinks.get(transition.to)!),
 					)
 				} else if (onStack.has(transition.to)) {
 					lowlinks.set(
 						nodeId,
-						Math.min(lowlinks.get(nodeId)!, indices.get(transition.to)!)
+						Math.min(lowlinks.get(nodeId)!, indices.get(transition.to)!),
 					)
 				}
 			}
@@ -415,14 +422,14 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 		const finished = new Map<string, number>()
 		let time = 0
 
-		const dfs = (nodeId: string, parent: string | null): void => {
+		const dfs = (nodeId: string, _parent: string | null): void => {
 			discovered.set(nodeId, time++)
 
 			const transitions = this.#procedural.getTransitions(nodeId)
 			for (const t of transitions) {
-				let classification:  EdgeClassification
+				let classification: EdgeClassification
 
-				if (! discovered.has(t.to)) {
+				if (!discovered.has(t.to)) {
 					// Tree edge
 					classification = 'tree'
 					classified.push({ from: t.from, to: t.to, classification })
@@ -456,15 +463,16 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 
 	// ---- Bottleneck Detection Methods ----
 
-	findBottlenecks(options?:  BottleneckDetectionOptions): readonly BottleneckInfo[] {
-		const trafficThreshold = options?.trafficThreshold ?? 10
-		const delayThreshold = options?.delayThreshold ?? 5000
+	findBottlenecks(options?: BottleneckDetectionOptions): readonly BottleneckInfo[] {
+		const trafficThreshold = options?.trafficThreshold ?? DEFAULT_TRAFFIC_THRESHOLD
+		// TODO: Use delayThreshold for delay-based bottleneck detection
+		const _delayThreshold = options?.delayThreshold ?? DEFAULT_DELAY_THRESHOLD_MS
 		const bottlenecks: BottleneckInfo[] = []
 
 		const nodes = this.#procedural.getNodes()
 
 		for (const node of nodes) {
-			const incoming = this.#procedural.getTransitionsTo(node. id)
+			const incoming = this.#procedural.getTransitionsTo(node.id)
 			const outgoing = this.#procedural.getTransitions(node.id)
 
 			// Calculate traffic based on predictive weights
@@ -489,7 +497,7 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 
 			// Bottleneck if high incoming and low outgoing ratio
 			const congestionScore =
-				outgoingTraffic > 0 ?  incomingTraffic / outgoingTraffic : incomingTraffic
+				outgoingTraffic > 0 ? incomingTraffic / outgoingTraffic : incomingTraffic
 
 			if (incomingTraffic >= trafficThreshold && congestionScore > 2) {
 				bottlenecks.push({
@@ -503,18 +511,18 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 			}
 		}
 
-		this. #emitAnalysisComplete('bottlenecks', bottlenecks)
+		this.#emitAnalysisComplete('bottlenecks', bottlenecks)
 		return bottlenecks
 	}
 
 	// ---- Automation Discovery Methods ----
 
 	findAutomationOpportunities(
-		options?: AutomationDiscoveryOptions
+		options?: AutomationDiscoveryOptions,
 	): readonly AutomationOpportunity[] {
-		const minRepetitions = options?.minRepetitions ?? 5
-		const minSequenceLength = options?.minSequenceLength ?? 2
-		const maxSequenceLength = options?.maxSequenceLength ?? 10
+		const minRepetitions = options?.minRepetitions ?? DEFAULT_MIN_REPETITIONS
+		const minSequenceLength = options?.minSequenceLength ?? DEFAULT_MIN_SEQUENCE_LENGTH
+		const maxSequenceLength = options?.maxSequenceLength ?? DEFAULT_MAX_SEQUENCE_LENGTH
 		const opportunities: AutomationOpportunity[] = []
 
 		// Find repetitive sequences in SCCs
@@ -572,7 +580,7 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	// ---- Context Analysis Methods ----
 
 	analyzeByContext(
-		options:  ContextAnalysisOptions
+		options:  ContextAnalysisOptions,
 	): readonly ContextualAnalysisResult[] {
 		// Simplified context analysis - would need session data for full implementation
 		const results: ContextualAnalysisResult[] = []
@@ -582,16 +590,19 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 				const procedures = this.#procedural.getProcedures()
 
 				for (const procedure of procedures) {
-					const patterns:  PatternInfo[] = []
+					const patterns: PatternInfo[] = []
 
 					// Calculate frequency for procedure
 					let totalWeight = 0
 					for (let i = 0; i < procedure.actions.length - 1; i++) {
 						const from = procedure.actions[i]
-						const weights = this.#predictive.getWeights(from, 'user')
-						const w = weights.find((w) => w.to === procedure.actions[i + 1])
-						if (w) {
-							totalWeight += w.predictiveWeight
+						const nextAction = procedure.actions[i + 1]
+						if (from && nextAction) {
+							const weights = this.#predictive.getWeights(from, 'user')
+							const w = weights.find((w) => w.to === nextAction)
+							if (w) {
+								totalWeight += w.predictiveWeight
+							}
 						}
 					}
 
@@ -619,10 +630,10 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	}
 
 	compareContexts(
-		context1: string,
-		context2: string
+		_context1: string,
+		_context2: string,
 	): readonly PatternInfo[] {
-		// Simplified comparison - would need full context tracking
+		// TODO: Implement full context comparison
 		return []
 	}
 
@@ -680,7 +691,7 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	// ---- Subscription Methods ----
 
 	onAnalysisComplete(
-		callback:  (analysisType: string, results: unknown) => void
+		callback:  (analysisType: string, results: unknown) => void,
 	): Unsubscribe {
 		this.#analysisCompleteListeners.add(callback)
 		return () => {
@@ -726,7 +737,7 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 export function createWorkflowAnalyzer(
 	procedural:  ProceduralGraphInterface,
 	predictive: PredictiveGraphInterface,
-	options?: WorkflowAnalyzerOptions
+	options?: WorkflowAnalyzerOptions,
 ): WorkflowAnalyzerInterface {
-	return new WorkflowAnalyzerImpl(procedural, predictive, options)
+	return new WorkflowAnalyzer(procedural, predictive, options)
 }

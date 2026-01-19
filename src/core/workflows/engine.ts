@@ -30,20 +30,16 @@ import type {
 	ProceduralGraphInterface,
 	PredictiveGraphInterface,
 	Unsubscribe,
-	ActionLoopError as ActionLoopErrorType,
+	ActionLoopErrorInterface,
+	SessionEntry,
 } from '../../types.js'
 import { ActionLoopError } from '../../errors.js'
 import { generateId, now } from '../../helpers.js'
-
-// ============================================================================
-// Session Store
-// ============================================================================
-
-interface SessionEntry {
-	info: SessionInfo
-	events: ActionEvent[]
-	active: boolean
-}
+import {
+	DEFAULT_SESSION_TIMEOUT_MS,
+	DEFAULT_PREDICTION_COUNT,
+	DEFAULT_MAX_EVENTS,
+} from '../../constants.js'
 
 // ============================================================================
 // Implementation
@@ -56,7 +52,6 @@ class WorkflowEngine implements WorkflowEngineInterface {
 	readonly #actorSessions: Map<Actor, string>
 	readonly #validateTransitions: boolean
 	readonly #trackSessions: boolean
-	readonly #maxSessionDuration: number
 	readonly #sessionTimeoutMs: number
 
 	readonly #transitionListeners: Set<TransitionCallback>
@@ -66,18 +61,17 @@ class WorkflowEngine implements WorkflowEngineInterface {
 	readonly #errorListeners: Set<ErrorCallback>
 
 	constructor(
-		procedural:  ProceduralGraphInterface,
+		procedural: ProceduralGraphInterface,
 		predictive: PredictiveGraphInterface,
-		options: WorkflowEngineOptions = {}
+		_options: WorkflowEngineOptions = {},
 	) {
 		this.#procedural = procedural
 		this.#predictive = predictive
 		this.#sessions = new Map()
 		this.#actorSessions = new Map()
-		this.#validateTransitions = options.validateTransitions !== false
-		this. #trackSessions = options.trackSessions !== false
-		this.#maxSessionDuration = options.maxSessionDuration ?? 3600000 // 1 hour
-		this.#sessionTimeoutMs = options.sessionTimeoutMs ?? 1800000 // 30 minutes
+		this.#validateTransitions = _options.validateTransitions !== false
+		this.#trackSessions = _options.trackSessions !== false
+		this.#sessionTimeoutMs = _options.sessionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS
 
 		this.#transitionListeners = new Set()
 		this.#predictionListeners = new Set()
@@ -86,24 +80,24 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		this.#errorListeners = new Set()
 
 		// Wire up hook subscriptions
-		if (options.onTransition) {
-			this.#transitionListeners.add(options.onTransition)
+		if (_options.onTransition) {
+			this.#transitionListeners.add(_options.onTransition)
 		}
-		if (options.onPrediction) {
-			this.#predictionListeners. add(options.onPrediction)
+		if (_options.onPrediction) {
+			this.#predictionListeners.add(_options.onPrediction)
 		}
-		if (options.onSessionStart) {
-			this.#sessionStartListeners.add(options.onSessionStart)
+		if (_options.onSessionStart) {
+			this.#sessionStartListeners.add(_options.onSessionStart)
 		}
-		if (options. onSessionEnd) {
-			this.#sessionEndListeners. add(options.onSessionEnd)
+		if (_options.onSessionEnd) {
+			this.#sessionEndListeners.add(_options.onSessionEnd)
 		}
-		if (options.onError) {
-			this. #errorListeners. add(options.onError)
+		if (_options.onError) {
+			this.#errorListeners.add(_options.onError)
 		}
 	}
 
-	#emitError(error: ActionLoopErrorType): void {
+	#emitError(error: ActionLoopErrorInterface): void {
 		for (const listener of this.#errorListeners) {
 			listener(error)
 		}
@@ -111,7 +105,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 
 	#updateSession(sessionId: string, from: string, to:  string): void {
 		const session = this.#sessions.get(sessionId)
-		if (!session || !session.active) return
+		if (!session?.active) return
 
 		const currentTime = now()
 		const lastEvent = session.events[session.events. length - 1]
@@ -148,7 +142,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 				const error = new ActionLoopError(
 					'INVALID_TRANSITION',
 					`Transition not allowed: ${from} -> ${to}`,
-					{ transitionKey: `${from}::${to}` }
+					{ transitionKey: `${from}::${to}` },
 				)
 				this.#emitError(error)
 				throw error
@@ -175,8 +169,8 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		}
 	}
 
-	predictNext(node: string, context:  PredictionContext): readonly string[] {
-		const count = context.count ??  5
+	predictNext(node: string, context: PredictionContext): readonly string[] {
+		const count = context.count ?? DEFAULT_PREDICTION_COUNT
 
 		// Get weighted transitions
 		const weighted = this.#predictive.getWeights(node, context.actor)
@@ -194,19 +188,19 @@ class WorkflowEngine implements WorkflowEngineInterface {
 
 	predictNextDetailed(
 		node: string,
-		context: PredictionContext
+		context: PredictionContext,
 	): DetailedPrediction {
-		const count = context.count ??  5
-		const weighted = this.#predictive. getWeights(node, context.actor)
+		const count = context.count ?? DEFAULT_PREDICTION_COUNT
+		const weighted = this.#predictive.getWeights(node, context.actor)
 
-		const predictions:  PredictionResult[] = weighted
+		const predictions: PredictionResult[] = weighted
 			.slice(0, count)
 			.map((w) => ({
 				nodeId: w.to,
 				score: w.weight,
 				baseWeight: w.baseWeight,
-				predictiveWeight: w. predictiveWeight,
-				confidence: w.weight > 0 ? w.predictiveWeight / w. weight : 0,
+				predictiveWeight: w.predictiveWeight,
+				confidence: w.weight > 0 ? w.predictiveWeight / w.weight : 0,
 			}))
 
 		return {
@@ -316,7 +310,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 			throw new ActionLoopError(
 				'SESSION_ALREADY_ENDED',
 				`Session already ended: ${sessionId}`,
-				{ sessionId }
+				{ sessionId },
 			)
 		}
 
@@ -360,17 +354,18 @@ class WorkflowEngine implements WorkflowEngineInterface {
 
 		// Reactivate session
 		session.active = true
-		session.info = {
-			...session. info,
-			lastActivity: currentTime,
-			path: options.path,
-		}
+		session.info = Object.assign(
+			{},
+			session.info,
+			{ lastActivity: currentTime },
+			options.path !== undefined ? { path: options.path } : {},
+		)
 
 		// Update actor mapping
 		this.#actorSessions.set(options.actor, sessionId)
 	}
 
-	getSessionChain(actor: Actor, options?:  ChainOptions): ActionChain {
+	getSessionChain(actor: Actor, options?: ChainOptions): ActionChain {
 		const limit = options?.limit ??  100
 		const events:  ActionEvent[] = []
 		const sessionIds = new Set<string>()
@@ -415,7 +410,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		}
 	}
 
-	truncateChain(sessionId: string, strategy?:  TruncationStrategy): void {
+	truncateChain(sessionId: string, strategy?: TruncationStrategy): void {
 		const session = this.#sessions.get(sessionId)
 		if (!session) {
 			throw new ActionLoopError('SESSION_NOT_FOUND', `Session not found: ${sessionId}`, {
@@ -424,7 +419,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		}
 
 		const strat = strategy ?? 'recency'
-		const maxEvents = 50 // Keep last 50 events
+		const maxEvents = DEFAULT_MAX_EVENTS
 
 		if (session.events.length <= maxEvents) return
 
@@ -436,7 +431,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 
 			case 'frequency':
 				// Keep events with high-frequency transitions (simplified)
-				session.events.splice(0, session.events. length - maxEvents)
+				session.events.splice(0, session.events.length - maxEvents)
 				break
 
 			case 'hybrid':
@@ -530,7 +525,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 export function createWorkflowEngine(
 	procedural: ProceduralGraphInterface,
 	predictive: PredictiveGraphInterface,
-	options?:  WorkflowEngineOptions
+	options?:  WorkflowEngineOptions,
 ): WorkflowEngineInterface {
-	return new WorkflowEngineImpl(procedural, predictive, options)
+	return new WorkflowEngine(procedural, predictive, options)
 }

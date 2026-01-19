@@ -4,7 +4,8 @@
  * Utility functions for ActionLoop.
  */
 
-import type { IsActionLoopSupported } from './types.js'
+import type { Actor, Node, Transition } from './types.js'
+import { VALID_ACTORS } from './constants.js'
 
 // ============================================================================
 // Environment Detection
@@ -15,7 +16,7 @@ import type { IsActionLoopSupported } from './types.js'
  *
  * @returns True if environment supports ActionLoop
  */
-export const isActionLoopSupported: IsActionLoopSupported = (): boolean => {
+export function isActionLoopSupported(): boolean {
 	// Check for ES2022+ features
 	try {
 		// Check Map and Set
@@ -36,6 +37,75 @@ export const isActionLoopSupported: IsActionLoopSupported = (): boolean => {
 	} catch {
 		return false
 	}
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+/**
+ * Check if a value is a valid Actor type.
+ *
+ * @param value - Value to check
+ * @returns True if value is a valid Actor
+ */
+export function isActor(value: unknown): value is Actor {
+	return typeof value === 'string' && VALID_ACTORS.has(value)
+}
+
+/**
+ * Check if a value is a valid Node.
+ *
+ * @param value - Value to check
+ * @returns True if value is a valid Node
+ */
+export function isNode(value: unknown): value is Node {
+	if (value === null || typeof value !== 'object') {
+		return false
+	}
+
+	const obj = value as Record<string, unknown>
+
+	// Required property
+	if (typeof obj.id !== 'string') {
+		return false
+	}
+
+	// Optional properties with correct types if present
+	if (obj.label !== undefined && typeof obj.label !== 'string') {
+		return false
+	}
+
+	if (obj.type !== undefined) {
+		const validTypes = new Set(['action', 'session', 'system', 'placeholder'])
+		if (typeof obj.type !== 'string' || !validTypes.has(obj.type)) {
+			return false
+		}
+	}
+
+	return true
+}
+
+/**
+ * Check if a value is a valid Transition.
+ *
+ * @param value - Value to check
+ * @returns True if value is a valid Transition
+ */
+export function isTransition(value: unknown): value is Transition {
+	if (value === null || typeof value !== 'object') {
+		return false
+	}
+
+	const obj = value as Record<string, unknown>
+
+	// Required properties
+	if (typeof obj.from !== 'string') return false
+	if (typeof obj.to !== 'string') return false
+	if (typeof obj.weight !== 'number') return false
+	if (!isActor(obj.actor)) return false
+
+	return true
 }
 
 // ============================================================================
@@ -64,8 +134,8 @@ export function generateId(): string {
  * @param to - Target node ID
  * @returns Transition key string
  */
-export function createTransitionKey(from: string, to:  string): string {
-	return `${from}:: ${to}`
+export function createTransitionKey(from: string, to: string): string {
+	return `${from}->${to}`
 }
 
 /**
@@ -75,13 +145,15 @@ export function createTransitionKey(from: string, to:  string): string {
  * @returns Tuple of [from, to] or undefined if invalid
  */
 export function parseTransitionKey(
-	key: string
+	key: string,
 ): readonly [string, string] | undefined {
-	const parts = key.split('::')
-	if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
+	const parts = key.split('->')
+	const from = parts[0]
+	const to = parts[1]
+	if (parts.length !== 2 || !from || !to) {
 		return undefined
 	}
-	return [parts[0], parts[1]] as const
+	return [from, to] as const
 }
 
 // ============================================================================
@@ -99,7 +171,7 @@ export function parseTransitionKey(
 export function createWeightKey(
 	from: string,
 	to: string,
-	actor:  string
+	actor:  string,
 ): string {
 	return `${from}::${to}::${actor}`
 }
@@ -152,4 +224,73 @@ export function now(): number {
  */
 export function elapsed(since: number): number {
 	return Date.now() - since
+}
+
+// ============================================================================
+// Guard Validation
+// ============================================================================
+
+/**
+ * Validate guard expression syntax.
+ * Checks for balanced parentheses and properly terminated strings.
+ *
+ * @param guard - Guard expression string to validate
+ * @returns True if syntax is valid (balanced parens and quotes)
+ */
+export function isValidGuardSyntax(guard: string): boolean {
+	let parenCount = 0
+	let inString = false
+	let stringChar = ''
+
+	for (const char of guard) {
+		if (inString) {
+			if (char === stringChar) {
+				inString = false
+			}
+		} else {
+			if (char === '"' || char === "'") {
+				inString = true
+				stringChar = char
+			} else if (char === '(') {
+				parenCount++
+			} else if (char === ')') {
+				parenCount--
+				if (parenCount < 0) return false
+			}
+		}
+	}
+
+	return parenCount === 0 && !inString
+}
+
+// ============================================================================
+// YAML Parsing
+// ============================================================================
+
+/**
+ * Parse a YAML value string into the appropriate JavaScript type.
+ * Handles quoted strings, numbers, and booleans.
+ *
+ * @param value - YAML value string
+ * @returns Parsed value as string, number, or boolean
+ */
+export function parseYAMLValue(value: string): string | number | boolean {
+	// Remove quotes
+	if (
+		(value.startsWith('"') && value.endsWith('"')) ||
+		(value.startsWith("'") && value.endsWith("'"))
+	) {
+		return value.slice(1, -1)
+	}
+
+	// Parse numbers
+	if (/^-?\d+(\.\d+)?$/.test(value)) {
+		return parseFloat(value)
+	}
+
+	// Parse booleans
+	if (value === 'true') return true
+	if (value === 'false') return false
+
+	return value
 }

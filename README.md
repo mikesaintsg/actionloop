@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@mikesaintsg/actionloop.svg)](https://www.npmjs.com/package/@mikesaintsg/actionloop)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@mikesaintsg/actionloop)](https://bundlephobia.com/package/@mikesaintsg/actionloop)
 [![license](https://img.shields.io/npm/l/@mikesaintsg/actionloop.svg)](LICENSE)
+[![tests](https://img.shields.io/badge/tests-231%20passing-brightgreen)](./tests)
 
 ---
 
@@ -15,9 +16,10 @@
 - ✅ **Sub-50ms Predictions** — Optimized for real-time interactive UIs
 - ✅ **Session Management** — Track user journeys with cross-session continuity
 - ✅ **Pattern Analysis** — Discover bottlenecks, loops, and automation opportunities
-- ✅ **Zero Dependencies** — Built on native TypeScript APIs
-- ✅ **TypeScript First** — Full type safety with generics and strict typing
+- ✅ **Zero Dependencies** — Built entirely on native TypeScript APIs
+- ✅ **TypeScript First** — Full type safety with strict typing and readonly interfaces
 - ✅ **Tree-shakeable** — ESM-only, import what you need
+- ✅ **Isomorphic** — Works in browser and Node.js environments
 
 ---
 
@@ -196,6 +198,29 @@ const opportunities = analyzer.findAutomationOpportunities({
 
 ---
 
+## Architecture
+
+ActionLoop uses a **two-graph architecture** to separate concerns:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      ProceduralGraph                            │
+│  Static rules: defines ALL valid transitions (deterministic)   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      PredictiveGraph                            │
+│  Dynamic weights: learned from usage patterns (adaptive)       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+- **ProceduralGraph**: Immutable at runtime, encodes every allowed path
+- **PredictiveGraph**: Learns from user behavior, ranks suggestions by frequency and recency
+- **WorkflowEngine**: Orchestrates the PPALS cycle (Observe → Update → Predict → Recommend)
+
+---
+
 ## Ecosystem Integration
 
 | Package                   | Integration                                            |
@@ -219,6 +244,30 @@ See [Integration with Ecosystem](./guides/actionloop.md#integration-with-ecosyst
 | Safari  | 15+             |
 | Edge    | 89+             |
 | Node.js | 22+             |
+
+---
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Type check
+npm run check
+
+# Lint and format
+npm run format
+
+# Build
+npm run build
+
+# Run tests
+npm test
+
+# Build showcase demo
+npm run show
+```
 
 ---
 

@@ -21,7 +21,7 @@ import type {
  */
 export class ActionLoopError extends Error implements ActionLoopErrorInterface {
 	readonly code: ActionLoopErrorCode
-	readonly nodeId?:  string
+	readonly nodeId?: string
 	readonly transitionKey?: string
 	readonly sessionId?: string
 	override readonly cause?: Error
@@ -29,18 +29,28 @@ export class ActionLoopError extends Error implements ActionLoopErrorInterface {
 	constructor(
 		code: ActionLoopErrorCode,
 		message: string,
-		data?:  Partial<Omit<ActionLoopErrorData, 'code' | 'message'>>
+		data?: Partial<Omit<ActionLoopErrorData, 'code' | 'message'>>,
 	) {
 		super(message)
 		this.name = 'ActionLoopError'
 		this.code = code
-		this.nodeId = data?.nodeId
-		this.transitionKey = data?.transitionKey
-		this. sessionId = data?. sessionId
-		this.cause = data?. cause
+
+		// Only assign if defined (exactOptionalPropertyTypes)
+		if (data?.nodeId !== undefined) {
+			this.nodeId = data.nodeId
+		}
+		if (data?.transitionKey !== undefined) {
+			this.transitionKey = data.transitionKey
+		}
+		if (data?.sessionId !== undefined) {
+			this.sessionId = data.sessionId
+		}
+		if (data?.cause !== undefined) {
+			this.cause = data.cause
+		}
 
 		// Maintains proper stack trace in V8 environments
-		if (Error.captureStackTrace) {
+		if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function') {
 			Error.captureStackTrace(this, ActionLoopError)
 		}
 	}
@@ -67,9 +77,9 @@ export class ActionLoopError extends Error implements ActionLoopErrorInterface {
  * }
  * ```
  */
-export const isActionLoopError:  IsActionLoopError = (
-	error: unknown
-): error is ActionLoopErrorType => {
+export const isActionLoopError: IsActionLoopError = (
+	error: unknown,
+): error is ActionLoopErrorInterface => {
 	return error instanceof ActionLoopError
 }
 
@@ -85,10 +95,10 @@ export const isActionLoopError:  IsActionLoopError = (
  * @param data - Optional additional error data
  * @returns ActionLoopError instance
  */
-export const createActionLoopError:  CreateActionLoopError = (
+export const createActionLoopError: CreateActionLoopError = (
 	code: ActionLoopErrorCode,
 	message: string,
-	data?: Partial<Omit<ActionLoopErrorData, 'code' | 'message'>>
-): ActionLoopErrorType => {
+	data?: Partial<Omit<ActionLoopErrorData, 'code' | 'message'>>,
+): ActionLoopErrorInterface => {
 	return new ActionLoopError(code, message, data)
 }

@@ -17,12 +17,12 @@ import type {
 	ExportedProceduralGraph,
 	ProceduralGraphInterface,
 	ProceduralGraphOptions,
-	ProceduralGraphSubscriptions,
 	Unsubscribe,
 	Actor,
 } from '../../types.js'
 import { ActionLoopError } from '../../errors.js'
 import { createTransitionKey, deepFreeze, now } from '../../helpers.js'
+import { EXPORT_VERSION } from '../../constants.js'
 
 // ============================================================================
 // Implementation
@@ -74,35 +74,38 @@ class ProceduralGraph implements ProceduralGraphInterface {
 		if (options.validateOnCreate !== false) {
 			const results = this.validate()
 			const errors = results.filter((r) => r.severity === 'error')
-			if (errors.length > 0) {
+			const firstError = errors[0]
+			if (firstError) {
 				throw new ActionLoopError(
 					'BUILD_FAILED',
-					`Procedural graph validation failed with ${errors.length} error(s): ${errors[0].message}`
+					`Procedural graph validation failed with ${errors.length} error(s): ${firstError.message}`,
 				)
 			}
 		}
 	}
 
 	#addNode(input: NodeInput): void {
-		const node:  Node = deepFreeze({
-			id: input.id,
-			label: input.label,
-			type: input.type,
-			metadata: input.metadata,
-		})
+		const node: Node = deepFreeze(
+			Object.assign(
+				{ id: input.id },
+				input.label !== undefined ? { label: input.label } : {},
+				input.type !== undefined ? { type: input.type } : {},
+				input.metadata !== undefined ? { metadata: input.metadata } : {},
+			) as Node,
+		)
 		this.#nodes.set(node.id, node)
 
-		if (! this.#outgoing.has(node.id)) {
+		if (!this.#outgoing.has(node.id)) {
 			this.#outgoing.set(node.id, new Set())
 		}
-		if (!this.#incoming.has(node. id)) {
-			this.#incoming. set(node.id, new Set())
+		if (!this.#incoming.has(node.id)) {
+			this.#incoming.set(node.id, new Set())
 		}
 	}
 
 	#addTransition(input: TransitionInput): void {
 		// Ensure nodes exist
-		if (!this.#nodes.has(input. from)) {
+		if (!this.#nodes.has(input.from)) {
 			this.#addNode({ id: input.from })
 		}
 		if (!this.#nodes.has(input.to)) {
@@ -110,27 +113,35 @@ class ProceduralGraph implements ProceduralGraphInterface {
 		}
 
 		const key = createTransitionKey(input.from, input.to)
-		const transition: Transition = deepFreeze({
-			from: input.from,
-			to: input.to,
-			weight: input.weight,
-			actor:  input.actor,
-			metadata: input.metadata,
-		})
+		const transition: Transition = deepFreeze(
+			Object.assign(
+				{
+					from: input.from,
+					to: input.to,
+					weight: input.weight,
+					actor: input.actor,
+				},
+				input.metadata !== undefined ? { metadata: input.metadata } : {},
+			) as Transition,
+		)
 
 		this.#transitions.set(key, transition)
 
 		// Update adjacency
-		this.#outgoing. get(input.from)?.add(input.to)
-		this.#incoming. get(input.to)?.add(input.from)
+		this.#outgoing.get(input.from)?.add(input.to)
+		this.#incoming.get(input.to)?.add(input.from)
 	}
 
 	#addProcedure(input: ProcedureInput): void {
-		const procedure:  Procedure = deepFreeze({
-			id: input.id,
-			actions: input.actions,
-			metadata: input.metadata,
-		})
+		const procedure: Procedure = deepFreeze(
+			Object.assign(
+				{
+					id: input.id,
+					actions: input.actions,
+				},
+				input.metadata !== undefined ? { metadata: input.metadata } : {},
+			) as Procedure,
+		)
 		this.#procedures.set(procedure.id, procedure)
 	}
 
@@ -337,7 +348,7 @@ class ProceduralGraph implements ProceduralGraphInterface {
 	// ---- Subscription Methods ----
 
 	onValidation(
-		callback: (results: readonly ValidationResult[]) => void
+		callback: (results: readonly ValidationResult[]) => void,
 	): Unsubscribe {
 		this. #validationListeners.add(callback)
 		return () => {
@@ -349,11 +360,11 @@ class ProceduralGraph implements ProceduralGraphInterface {
 
 	export(): ExportedProceduralGraph {
 		return deepFreeze({
-			version: 1,
+			version: EXPORT_VERSION,
 			exportedAt: now(),
 			nodes: this.getNodes(),
-			transitions: this. getAllTransitions(),
-			procedures: this. getProcedures(),
+			transitions: this.getAllTransitions(),
+			procedures: this.getProcedures(),
 		})
 	}
 
@@ -386,7 +397,7 @@ class ProceduralGraph implements ProceduralGraphInterface {
  * ```
  */
 export function createProceduralGraph(
-	options: ProceduralGraphOptions
+	options: ProceduralGraphOptions,
 ): ProceduralGraphInterface {
-	return new ProceduralGraphImpl(options)
+	return new ProceduralGraph(options)
 }
