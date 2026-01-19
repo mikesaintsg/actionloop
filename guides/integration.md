@@ -3,53 +3,53 @@
 ## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
-  - [Package Responsibilities](#package-responsibilities)
-  - [Data Flow](#data-flow)
+	- [Package Responsibilities](#package-responsibilities)
+	- [Data Flow](#data-flow)
 - [Setup and Configuration](#setup-and-configuration)
-  - [Environment Configuration](#environment-configuration)
-  - [Database Schema (for IndexedDB)](#database-schema-for-indexeddb)
+	- [Environment Configuration](#environment-configuration)
+	- [Database Schema (for IndexedDB)](#database-schema-for-indexeddb)
 - [Complete Application Example](#complete-application-example)
 - [Step-by-Step Breakdown](#step-by-step-breakdown)
-  - [1. The Port Pattern](#1-the-port-pattern)
-  - [2. Adapter Categories](#2-adapter-categories)
-  - [3. Factory Function Pattern](#3-factory-function-pattern)
-  - [4. Event-Driven Architecture](#4-event-driven-architecture)
-  - [5. Context Building Flow](#5-context-building-flow)
-  - [6. Tool Execution Loop](#6-tool-execution-loop)
+	- [1. The Port Pattern](#1-the-port-pattern)
+	- [2. Adapter Categories](#2-adapter-categories)
+	- [3. Factory Function Pattern](#3-factory-function-pattern)
+	- [4. Event-Driven Architecture](#4-event-driven-architecture)
+	- [5. Context Building Flow](#5-context-building-flow)
+	- [6. Tool Execution Loop](#6-tool-execution-loop)
 - [Advanced Patterns](#advanced-patterns)
-  - [Multi-Provider Fallback](#multi-provider-fallback)
-  - [Streaming with Token Batching](#streaming-with-token-batching)
-  - [Cross-Tab Synchronization](#cross-tab-synchronization)
-  - [Hybrid Search with Reranking](#hybrid-search-with-reranking)
+	- [Multi-Provider Fallback](#multi-provider-fallback)
+	- [Streaming with Token Batching](#streaming-with-token-batching)
+	- [Cross-Tab Synchronization](#cross-tab-synchronization)
+	- [Hybrid Search with Reranking](#hybrid-search-with-reranking)
 - [ActionLoop Integration](#actionloop-integration)
-  - [Overview](#overview)
-  - [Basic Setup](#basic-setup)
-  - [Recording User Transitions](#recording-user-transitions)
-  - [Displaying Predictions in UI](#displaying-predictions-in-ui)
-  - [Session Management](#session-management)
-  - [Persisting Predictive Weights](#persisting-predictive-weights)
-  - [Workflow Analysis and Optimization](#workflow-analysis-and-optimization)
-  - [Integration with Navigation](#integration-with-navigation)
-  - [Integration with Form Package](#integration-with-form-package)
-  - [Integration with Broadcast for Cross-Tab](#integration-with-broadcast-for-cross-tab)
-  - [Complete ActionLoop Application Example](#complete-actionloop-application-example)
+	- [Overview](#overview)
+	- [Basic Setup](#basic-setup)
+	- [Recording User Transitions](#recording-user-transitions)
+	- [Displaying Predictions in UI](#displaying-predictions-in-ui)
+	- [Session Management](#session-management)
+	- [Persisting Predictive Weights](#persisting-predictive-weights)
+	- [Workflow Analysis and Optimization](#workflow-analysis-and-optimization)
+	- [Integration with Navigation](#integration-with-navigation)
+	- [Integration with Form Package](#integration-with-form-package)
+	- [Integration with Broadcast for Cross-Tab](#integration-with-broadcast-for-cross-tab)
+	- [Complete ActionLoop Application Example](#complete-actionloop-application-example)
 - [Error Handling](#error-handling)
-  - [Comprehensive Error Handling](#comprehensive-error-handling)
-  - [Graceful Degradation](#graceful-degradation)
+	- [Comprehensive Error Handling](#comprehensive-error-handling)
+	- [Graceful Degradation](#graceful-degradation)
 - [Performance Optimization](#performance-optimization)
-  - [1. Lazy Loading](#1-lazy-loading)
-  - [2. Debounced Context Building](#2-debounced-context-building)
-  - [3. Parallel Initialization](#3-parallel-initialization)
-  - [4. Streaming Response Rendering](#4-streaming-response-rendering)
+	- [1. Lazy Loading](#1-lazy-loading)
+	- [2. Debounced Context Building](#2-debounced-context-building)
+	- [3. Parallel Initialization](#3-parallel-initialization)
+	- [4. Streaming Response Rendering](#4-streaming-response-rendering)
 - [Testing Strategies](#testing-strategies)
-  - [Unit Testing with Mocks](#unit-testing-with-mocks)
-  - [Integration Testing](#integration-testing)
-  - [E2E Testing with Playwright](#e2e-testing-with-playwright)
+	- [Unit Testing with Mocks](#unit-testing-with-mocks)
+	- [Integration Testing](#integration-testing)
+	- [E2E Testing with Playwright](#e2e-testing-with-playwright)
 - [Summary](#summary)
 - [Appendix:  Rater Integration](#appendix-rater-integration)
-  - [Integration with Storage Packages](#integration-with-storage-packages)
-  - [Integration with Form Package](#integration-with-form-package-1)
-  - [Use Cases](#use-cases)
+	- [Integration with Storage Packages](#integration-with-storage-packages)
+	- [Integration with Form Package](#integration-with-form-package-1)
+	- [Use Cases](#use-cases)
 
 ---
 
@@ -57,23 +57,23 @@
 
 ### Package Responsibilities
 
-| Package | Responsibility | Key Exports |
-|---------|---------------|-------------|
-| `@mikesaintsg/core` | Shared types, interfaces, Result pattern | `Unsubscribe`, `EmbeddingAdapterInterface`, `ok`, `err` |
-| `@mikesaintsg/adapters` | Provider implementations, policy adapters | `createOpenAIProviderAdapter`, `createRetryAdapter` |
-| `@mikesaintsg/inference` | LLM generation, sessions, streaming | `createEngine`, `createSession` |
-| `@mikesaintsg/vectorstore` | Document storage, similarity search | `createVectorStore` |
-| `@mikesaintsg/contextprotocol` | Tool schemas, validation, execution | `createToolRegistry` |
-| `@mikesaintsg/contextbuilder` | Context assembly, token budgeting | `createContextBuilder`, `createContextManager` |
-| `@mikesaintsg/storage` | Key-value storage with TTL | `createStorage` |
-| `@mikesaintsg/indexeddb` | Structured data persistence | `createDatabase` |
-| `@mikesaintsg/broadcast` | Cross-tab state synchronization | `createBroadcast` |
-| `@mikesaintsg/navigation` | Client-side routing with guards | `createNavigation` |
-| `@mikesaintsg/form` | Form state and validation | `createForm` |
-| `@mikesaintsg/table` | Data table management | `createTable` |
-| `@mikesaintsg/filesystem` | File system operations (OPFS) | `createFileSystem` |
-| `@mikesaintsg/rater` | Rating/scoring calculations | `createRatingEngine` |
-| `@actionloop/core` | Workflow guidance with adaptive predictions | `createWorkflowEngine`, `createProceduralGraph` |
+| Package                        | Responsibility                              | Key Exports                                             |
+|--------------------------------|---------------------------------------------|---------------------------------------------------------|
+| `@mikesaintsg/core`            | Shared types, interfaces, Result pattern    | `Unsubscribe`, `EmbeddingAdapterInterface`, `ok`, `err` |
+| `@mikesaintsg/adapters`        | Provider implementations, policy adapters   | `createOpenAIProviderAdapter`, `createRetryAdapter`     |
+| `@mikesaintsg/inference`       | LLM generation, sessions, streaming         | `createEngine`, `createSession`                         |
+| `@mikesaintsg/vectorstore`     | Document storage, similarity search         | `createVectorStore`                                     |
+| `@mikesaintsg/contextprotocol` | Tool schemas, validation, execution         | `createToolRegistry`                                    |
+| `@mikesaintsg/contextbuilder`  | Context assembly, token budgeting           | `createContextBuilder`, `createContextManager`          |
+| `@mikesaintsg/storage`         | Key-value storage with TTL                  | `createStorage`                                         |
+| `@mikesaintsg/indexeddb`       | Structured data persistence                 | `createDatabase`                                        |
+| `@mikesaintsg/broadcast`       | Cross-tab state synchronization             | `createBroadcast`                                       |
+| `@mikesaintsg/navigation`      | Client-side routing with guards             | `createNavigation`                                      |
+| `@mikesaintsg/form`            | Form state and validation                   | `createForm`                                            |
+| `@mikesaintsg/table`           | Data table management                       | `createTable`                                           |
+| `@mikesaintsg/filesystem`      | File system operations (OPFS)               | `createFileSystem`                                      |
+| `@mikesaintsg/rater`           | Rating/scoring calculations                 | `createRatingEngine`                                    |
+| `@mikesaintsg/actionloop`      | Workflow guidance with adaptive predictions | `createWorkflowEngine`, `createProceduralGraph`         |
 
 ### Data Flow
 
@@ -82,12 +82,12 @@ User Action
     │
     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        @actionloop/core                             │
+│                        @mikesaintsg/actionloop                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐ │
 │  │ Procedural  │───▶│ Predictive  │───▶│    WorkflowEngine       │ │
 │  │   Graph     │    │   Graph     │    │ (record + predict)      │ │
 │  └─────────────┘    └─────────────┘    └───────────┬─────────────┘ │
-└───────────────────────────────────���────────────────┼────────────────┘
+└────────────────────────────────────────────────────┼────────────────┘
                                                      │
     ┌────────────────────────────────────────────────┼────────────────┐
     │                                                ▼                │
@@ -117,7 +117,7 @@ User Action
     │                    └─────────────┘                              │
     │                                                                 │
     │                    UI / Application Layer                       │
-    └────────────────────────────────────────────���────────────────────┘
+    └─────────────────────────────────────────────────────────────────┘
 ````
 
 ---
@@ -218,7 +218,7 @@ import {
 	createProceduralGraph,
 	createPredictiveGraph,
 	createWorkflowEngine,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 import type { AppDatabaseSchema } from './config/database. js'
 import { loadEnvironment } from './config/env.js'
@@ -608,7 +608,7 @@ import {
 	createProceduralGraph,
 	createPredictiveGraph,
 	createWorkflowEngine,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 // Define your workflow transitions
 const transitions = [
@@ -658,7 +658,7 @@ export function createWorkflowSystem() {
 
 ````typescript
 // src/workflows/tracking.ts
-import type { WorkflowEngineInterface } from '@actionloop/core'
+import type { WorkflowEngineInterface } from '@mikesaintsg/actionloop'
 
 export function createWorkflowTracker(engine: WorkflowEngineInterface) {
 	let currentNode = 'landing'
@@ -733,7 +733,7 @@ export function createWorkflowTracker(engine: WorkflowEngineInterface) {
 
 ````typescript
 // src/components/ActionRecommendations.ts
-import type { WorkflowEngineInterface, PredictionResult } from '@actionloop/core'
+import type { WorkflowEngineInterface, PredictionResult } from '@mikesaintsg/actionloop'
 
 export interface ActionRecommendation {
 	readonly nodeId: string
@@ -800,7 +800,7 @@ import type {
 	WorkflowEngineInterface,
 	SessionInfo,
 	ActionChain,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 import { createStorage } from '@mikesaintsg/storage'
 
 interface PersistedSessionState {
@@ -876,7 +876,7 @@ export function createSessionManager(engine: WorkflowEngineInterface) {
 import type {
 	PredictiveGraphInterface,
 	ExportedPredictiveGraph,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 import { createDatabase } from '@mikesaintsg/indexeddb'
 
 interface WorkflowDatabaseSchema {
@@ -957,7 +957,7 @@ import {
 	type LoopInfo,
 	type BottleneckInfo,
 	type AutomationOpportunity,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 export function createWorkflowAnalysis(
 	procedural: ProceduralGraphInterface,
@@ -1026,7 +1026,7 @@ export function createWorkflowAnalysis(
 ````typescript
 // src/integration/navigation-workflow.ts
 import { createNavigation, type NavigationInterface } from '@mikesaintsg/navigation'
-import type { WorkflowEngineInterface } from '@actionloop/core'
+import type { WorkflowEngineInterface } from '@mikesaintsg/actionloop'
 
 type AppPage = 'landing' | 'login' | 'dashboard' | 'settings' | 'profile' | 'projects'
 
@@ -1115,7 +1115,7 @@ export function createWorkflowNavigation(
 ````typescript
 // src/integration/form-workflow.ts
 import { createForm, type FormInterface } from '@mikesaintsg/form'
-import type { WorkflowEngineInterface } from '@actionloop/core'
+import type { WorkflowEngineInterface } from '@mikesaintsg/actionloop'
 
 interface OnboardingFormData {
 	name: string
@@ -1202,7 +1202,7 @@ import { createBroadcast, type BroadcastInterface } from '@mikesaintsg/broadcast
 import type {
 	WorkflowEngineInterface,
 	PredictiveGraphInterface,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 interface WorkflowSyncState {
 	currentNode: string
@@ -1316,7 +1316,7 @@ import {
 	createWorkflowBuilder,
 	createWorkflowAnalyzer,
 	type Transition,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 // ============================================================================
 // Workflow Definition
@@ -1586,7 +1586,7 @@ window.addEventListener('beforeunload', () => {
 import {
 	isActionLoopError,
 	type ActionLoopErrorCode,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 function handleWorkflowError(error: unknown): void {
 	if (isActionLoopError(error)) {
@@ -1664,7 +1664,7 @@ let analyzer: WorkflowAnalyzerInterface | undefined
 
 async function getAnalyzer() {
 	if (!analyzer) {
-		const { createWorkflowAnalyzer } = await import('@actionloop/core')
+		const { createWorkflowAnalyzer } = await import('@mikesaintsg/actionloop')
 		analyzer = createWorkflowAnalyzer(proceduralGraph, predictiveGraph)
 	}
 	return analyzer
@@ -1754,7 +1754,7 @@ import {
 	createProceduralGraph,
 	createPredictiveGraph,
 	createWorkflowEngine,
-} from '@actionloop/core'
+} from '@mikesaintsg/actionloop'
 
 describe('WorkflowEngine', () => {
 	it('records transitions and updates weights', () => {
@@ -1950,18 +1950,18 @@ test.describe('Workflow Recommendations', () => {
 
 ## Summary
 
-The @mikesaintsg ecosystem provides a comprehensive set of packages for building modern TypeScript applications with: 
+The @mikesaintsg ecosystem provides a comprehensive set of packages for building modern TypeScript applications with:
 
-| Capability | Packages |
-|------------|----------|
-| **AI/LLM Integration** | `@mikesaintsg/inference`, `@mikesaintsg/adapters` |
-| **RAG & Search** | `@mikesaintsg/vectorstore`, `@mikesaintsg/contextbuilder` |
-| **Tool Calling** | `@mikesaintsg/contextprotocol` |
-| **Workflow Guidance** | `@actionloop/core` |
-| **Persistence** | `@mikesaintsg/storage`, `@mikesaintsg/indexeddb`, `@mikesaintsg/filesystem` |
-| **Cross-Tab Sync** | `@mikesaintsg/broadcast` |
-| **UI State** | `@mikesaintsg/navigation`, `@mikesaintsg/form`, `@mikesaintsg/table` |
-| **Calculations** | `@mikesaintsg/rater` |
+| Capability             | Packages                                                                    |
+|------------------------|-----------------------------------------------------------------------------|
+| **AI/LLM Integration** | `@mikesaintsg/inference`, `@mikesaintsg/adapters`                           |
+| **RAG & Search**       | `@mikesaintsg/vectorstore`, `@mikesaintsg/contextbuilder`                   |
+| **Tool Calling**       | `@mikesaintsg/contextprotocol`                                              |
+| **Workflow Guidance**  | `@mikesaintsg/actionloop`                                                   |
+| **Persistence**        | `@mikesaintsg/storage`, `@mikesaintsg/indexeddb`, `@mikesaintsg/filesystem` |
+| **Cross-Tab Sync**     | `@mikesaintsg/broadcast`                                                    |
+| **UI State**           | `@mikesaintsg/navigation`, `@mikesaintsg/form`, `@mikesaintsg/table`        |
+| **Calculations**       | `@mikesaintsg/rater`                                                        |
 
 **Key Integration Points:**
 
@@ -1985,7 +1985,7 @@ The @mikesaintsg ecosystem provides a comprehensive set of packages for building
 
 ## Appendix:  Rater Integration
 
-The `@mikesaintsg/rater` package provides flexible rating and scoring calculations. 
+The `@mikesaintsg/rater` package provides flexible rating and scoring calculations.
 
 ### Integration with Storage Packages
 
@@ -2121,7 +2121,7 @@ form.onChange((field, value) => {
                                                       @table
 
 
-                              @actionloop/core
+                           @mikesaintsg/actionloop
                                      │
                    ┌─────────────────┼─────────────────┐
                    │                 │                 │
@@ -2132,5 +2132,3 @@ form.onChange((field, value) => {
                    ▼                 ▼                 ▼
             WorkflowBuilder  WorkflowValidator  WorkflowAnalyzer
 ````
-
-**Note**: `@actionloop/core` is a standalone package with zero external dependencies.  It integrates with the @mikesaintsg ecosystem through composition, not inheritance. 
