@@ -1,9 +1,9 @@
 # Phase 2: Core Graphs
 
-> **Status:** ⏳ Pending
-> **Started:** —
-> **Target:** —
-> **Depends on:** Phase 1 (Foundation) ⏳
+> **Status:** ✅ Complete
+> **Started:** 2026-01-19
+> **Completed:** 2026-01-19
+> **Depends on:** Phase 1 (Foundation) ✅
 
 ---
 
@@ -12,11 +12,11 @@
 > **Purpose:** Quick orientation for models starting mid-project.
 
 ```
-Current Deliverable: 2.1 ProceduralGraph
-Checklist Progress: 0/16 items complete
-Last Completed: —
-Next Task: Implement ProceduralGraph class
-Blockers: Phase 1 must complete first
+Current Deliverable: Complete
+Checklist Progress: 16/16 items complete
+Last Completed: Unit tests for graphs
+Next Task: Phase 3 - Workflow Systems
+Blockers: None
 ```
 
 ---
@@ -29,23 +29,23 @@ Implement the two core graph systems: ProceduralGraph (static transition rules) 
 
 ## Progress Summary
 
-| Metric          | Value     |
-|-----------------|-----------|
-| Deliverables    | 0/4       |
-| Checklist Items | 0/16      |
-| Tests Passing   | —         |
-| Quality Gates   | ⏳ Pending |
+| Metric          | Value       |
+|-----------------|-------------|
+| Deliverables    | 4/4         |
+| Checklist Items | 16/16       |
+| Tests Passing   | 48/48       |
+| Quality Gates   | ✅ All Pass |
 
 ---
 
 ## Deliverables
 
-| #   | Deliverable             | Status    | Assignee | Notes                                        |
-|-----|-------------------------|-----------|----------|----------------------------------------------|
-| 2.1 | ProceduralGraph         | ⏳ Pending | —        | Static graph implementation                  |
-| 2.2 | PredictiveGraph         | ⏳ Pending | —        | Dynamic weight overlay                       |
-| 2.3 | Graph factory functions | ⏳ Pending | —        | createProceduralGraph, createPredictiveGraph |
-| 2.4 | Unit tests for graphs   | ⏳ Pending | —        | tests/core/graphs/                           |
+| #   | Deliverable             | Status  | Assignee | Notes                                        |
+|-----|-------------------------|---------|----------|----------------------------------------------|
+| 2.1 | ProceduralGraph         | ✅ Done | —        | Static graph implementation                  |
+| 2.2 | PredictiveGraph         | ✅ Done | —        | Dynamic weight overlay                       |
+| 2.3 | Graph factory functions | ✅ Done | —        | createProceduralGraph, createPredictiveGraph |
+| 2.4 | Unit tests for graphs   | ✅ Done | —        | 48 tests passing                             |
 
 **Status Legend:**
 - ✅ Done
@@ -120,37 +120,37 @@ export interface ProceduralGraphInterface
 ### Implementation Checklist
 
 **ProceduralGraph (2.1):**
-- [ ] Create ProceduralGraph class with private fields
-- [ ] Implement constructor with options parsing
-- [ ] Implement node accessor methods (getNode, getNodes, hasNode)
-- [ ] Implement transition accessor methods (getTransitions, hasTransition)
-- [ ] Implement procedure accessor methods (getProcedure, getProcedures)
-- [ ] Implement boundary detection (isStartNode, isEndNode, getStartNodes, getEndNodes)
-- [ ] Implement getStats()
-- [ ] Implement validate() with validation rules
-- [ ] Implement export() serialization
-- [ ] Implement destroy() cleanup
-- [ ] Wire up subscription methods (onValidation)
+- [x] Create ProceduralGraph class with private fields
+- [x] Implement constructor with options parsing
+- [x] Implement node accessor methods (getNode, getNodes, hasNode)
+- [x] Implement transition accessor methods (getTransitions, hasTransition)
+- [x] Implement procedure accessor methods (getProcedure, getProcedures)
+- [x] Implement boundary detection (isStartNode, isEndNode, getStartNodes, getEndNodes)
+- [x] Implement getStats()
+- [x] Implement validate() with validation rules
+- [x] Implement export() serialization
+- [x] Implement destroy() cleanup
+- [x] Wire up subscription methods (onValidation)
 
 **PredictiveGraph (2.2):**
-- [ ] Create PredictiveGraph class with private fields
-- [ ] Implement constructor with procedural graph and options
-- [ ] Implement weight accessor methods (getWeight, getWeights, hasWeight)
-- [ ] Implement weight mutator methods (updateWeight, setWeight)
-- [ ] Implement decay algorithm (applyDecay)
-- [ ] Implement clear methods (clear, clearActor)
-- [ ] Implement preload() for historical data
-- [ ] Implement export/import for persistence
-- [ ] Implement getModelId(), getDecayConfig(), getStats()
-- [ ] Implement destroy() cleanup
-- [ ] Wire up subscription methods (onWeightUpdate, onDecay)
+- [x] Create PredictiveGraph class with private fields
+- [x] Implement constructor with procedural graph and options
+- [x] Implement weight accessor methods (getWeight, getWeights, hasWeight)
+- [x] Implement weight mutator methods (updateWeight, setWeight)
+- [x] Implement decay algorithm (applyDecay)
+- [x] Implement clear methods (clear, clearActor)
+- [x] Implement preload() for historical data
+- [x] Implement export/import for persistence
+- [x] Implement getModelId(), getDecayConfig(), getStats()
+- [x] Implement destroy() cleanup
+- [x] Wire up subscription methods (onWeightUpdate, onDecay)
 
 **Factories (2.3):**
-- [ ] Add createProceduralGraph to src/factories.ts
-- [ ] Add createPredictiveGraph to src/factories.ts
+- [x] Add createProceduralGraph to src/core/graphs/procedural.ts
+- [x] Add createPredictiveGraph to src/core/graphs/predictive.ts
 
 **Exports:**
-- [ ] Update barrel export in `src/index.ts`
+- [x] Update barrel export in `src/index.ts`
 
 ### Acceptance Criteria
 
@@ -238,12 +238,12 @@ npm test         # Unit tests
 
 **Current Status:**
 
-| Gate             | Last Run | Result |
-|------------------|----------|--------|
-| `npm run check`  | —        | ⏳      |
-| `npm run format` | —        | ⏳      |
-| `npm run build`  | —        | ⏳      |
-| `npm test`       | —        | ⏳      |
+| Gate             | Last Run   | Result  |
+|------------------|------------|---------|
+| `npm run check`  | 2026-01-19 | ✅ Pass |
+| `npm run format` | 2026-01-19 | ✅ Pass |
+| `npm run build`  | 2026-01-19 | ✅ Pass |
+| `npm test`       | 2026-01-19 | ✅ Pass |
 
 ---
 
@@ -251,8 +251,8 @@ npm test         # Unit tests
 
 | Component     | Min Coverage | Current |
 |---------------|--------------|---------|
-| procedural.ts | 80%          | —       |
-| predictive.ts | 80%          | —       |
+| procedural.ts | 80%          | ✅ 100% |
+| predictive.ts | 80%          | ✅ 100% |
 
 ---
 
@@ -282,14 +282,14 @@ npm test         # Unit tests
 
 All of the following must be true:
 
-- [ ] All deliverables marked ✅ Done
-- [ ] `npm run check` passes
-- [ ] `npm run format` passes
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
-- [ ] No `it.todo()` remaining in phase scope
-- [ ] All files in "Files Created/Modified" reviewed
-- [ ] PLAN.md updated:
-  - [ ] Phase 2 status → ✅ Complete
-  - [ ] Current Session State updated
-  - [ ] Session Log entry added
+- [x] All deliverables marked ✅ Done
+- [x] `npm run check` passes
+- [x] `npm run format` passes
+- [x] `npm run build` passes
+- [x] `npm test` passes
+- [x] No `it.todo()` remaining in phase scope
+- [x] All files in "Files Created/Modified" reviewed
+- [x] PLAN.md updated:
+  - [x] Phase 2 status → ✅ Complete
+  - [x] Current Session State updated
+  - [x] Session Log entry added
