@@ -31,19 +31,15 @@ import type {
 	PredictiveGraphInterface,
 	Unsubscribe,
 	ActionLoopErrorInterface,
+	SessionEntry,
 } from '../../types.js'
 import { ActionLoopError } from '../../errors.js'
 import { generateId, now } from '../../helpers.js'
-
-// ============================================================================
-// Session Store
-// ============================================================================
-
-interface SessionEntry {
-	info: SessionInfo
-	events: ActionEvent[]
-	active: boolean
-}
+import {
+	DEFAULT_SESSION_TIMEOUT_MS,
+	DEFAULT_PREDICTION_COUNT,
+	DEFAULT_MAX_EVENTS,
+} from '../../constants.js'
 
 // ============================================================================
 // Implementation
@@ -75,7 +71,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		this.#actorSessions = new Map()
 		this.#validateTransitions = _options.validateTransitions !== false
 		this.#trackSessions = _options.trackSessions !== false
-		this.#sessionTimeoutMs = _options.sessionTimeoutMs ?? 1800000 // 30 minutes
+		this.#sessionTimeoutMs = _options.sessionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS
 
 		this.#transitionListeners = new Set()
 		this.#predictionListeners = new Set()
@@ -173,8 +169,8 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		}
 	}
 
-	predictNext(node: string, context:  PredictionContext): readonly string[] {
-		const count = context.count ??  5
+	predictNext(node: string, context: PredictionContext): readonly string[] {
+		const count = context.count ?? DEFAULT_PREDICTION_COUNT
 
 		// Get weighted transitions
 		const weighted = this.#predictive.getWeights(node, context.actor)
@@ -194,17 +190,17 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		node: string,
 		context: PredictionContext,
 	): DetailedPrediction {
-		const count = context.count ??  5
-		const weighted = this.#predictive. getWeights(node, context.actor)
+		const count = context.count ?? DEFAULT_PREDICTION_COUNT
+		const weighted = this.#predictive.getWeights(node, context.actor)
 
-		const predictions:  PredictionResult[] = weighted
+		const predictions: PredictionResult[] = weighted
 			.slice(0, count)
 			.map((w) => ({
 				nodeId: w.to,
 				score: w.weight,
 				baseWeight: w.baseWeight,
-				predictiveWeight: w. predictiveWeight,
-				confidence: w.weight > 0 ? w.predictiveWeight / w. weight : 0,
+				predictiveWeight: w.predictiveWeight,
+				confidence: w.weight > 0 ? w.predictiveWeight / w.weight : 0,
 			}))
 
 		return {
@@ -414,7 +410,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		}
 	}
 
-	truncateChain(sessionId: string, strategy?:  TruncationStrategy): void {
+	truncateChain(sessionId: string, strategy?: TruncationStrategy): void {
 		const session = this.#sessions.get(sessionId)
 		if (!session) {
 			throw new ActionLoopError('SESSION_NOT_FOUND', `Session not found: ${sessionId}`, {
@@ -423,7 +419,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		}
 
 		const strat = strategy ?? 'recency'
-		const maxEvents = 50 // Keep last 50 events
+		const maxEvents = DEFAULT_MAX_EVENTS
 
 		if (session.events.length <= maxEvents) return
 
@@ -435,7 +431,7 @@ class WorkflowEngine implements WorkflowEngineInterface {
 
 			case 'frequency':
 				// Keep events with high-frequency transitions (simplified)
-				session.events.splice(0, session.events. length - maxEvents)
+				session.events.splice(0, session.events.length - maxEvents)
 				break
 
 			case 'hybrid':

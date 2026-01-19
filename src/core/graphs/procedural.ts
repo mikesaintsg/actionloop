@@ -22,6 +22,7 @@ import type {
 } from '../../types.js'
 import { ActionLoopError } from '../../errors.js'
 import { createTransitionKey, deepFreeze, now } from '../../helpers.js'
+import { EXPORT_VERSION } from '../../constants.js'
 
 // ============================================================================
 // Implementation
@@ -359,11 +360,11 @@ class ProceduralGraph implements ProceduralGraphInterface {
 
 	export(): ExportedProceduralGraph {
 		return deepFreeze({
-			version: 1,
+			version: EXPORT_VERSION,
 			exportedAt: now(),
 			nodes: this.getNodes(),
-			transitions: this. getAllTransitions(),
-			procedures: this. getProcedures(),
+			transitions: this.getAllTransitions(),
+			procedures: this.getProcedures(),
 		})
 	}
 

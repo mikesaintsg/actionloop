@@ -1304,3 +1304,27 @@ export type CreateActionLoopError = (
 	message: string,
 	data?:  Partial<Omit<ActionLoopErrorData, 'code' | 'message'>>
 ) => ActionLoopErrorInterface
+
+// ============================================================================
+// Internal Implementation Types
+// ============================================================================
+
+/**
+ * Weight entry for predictive graph weight storage.
+ * @internal Used by PredictiveGraph implementation
+ */
+export interface WeightEntry {
+	readonly weight: number
+	readonly lastUpdated: number
+	readonly updateCount: number
+}
+
+/**
+ * Session entry for engine session storage.
+ * @internal Used by WorkflowEngine implementation
+ */
+export interface SessionEntry {
+	info: SessionInfo
+	readonly events: ActionEvent[]
+	active: boolean
+}

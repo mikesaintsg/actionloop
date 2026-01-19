@@ -4,7 +4,8 @@
  * Utility functions for ActionLoop.
  */
 
-import type { Actor, IsActionLoopSupported, Node, Transition } from './types.js'
+import type { Actor, Node, Transition } from './types.js'
+import { VALID_ACTORS } from './constants.js'
 
 // ============================================================================
 // Environment Detection
@@ -15,7 +16,7 @@ import type { Actor, IsActionLoopSupported, Node, Transition } from './types.js'
  *
  * @returns True if environment supports ActionLoop
  */
-export const isActionLoopSupported: IsActionLoopSupported = (): boolean => {
+export function isActionLoopSupported(): boolean {
 	// Check for ES2022+ features
 	try {
 		// Check Map and Set
@@ -41,8 +42,6 @@ export const isActionLoopSupported: IsActionLoopSupported = (): boolean => {
 // ============================================================================
 // Type Guards
 // ============================================================================
-
-const VALID_ACTORS = new Set<string>(['user', 'system', 'automation'])
 
 /**
  * Check if a value is a valid Actor type.

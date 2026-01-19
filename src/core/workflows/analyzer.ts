@@ -26,6 +26,14 @@ import type {
 	PredictiveGraphInterface,
 	Unsubscribe,
 } from '../../types.js'
+import {
+	DEFAULT_HOT_LOOP_THRESHOLD,
+	DEFAULT_TRAFFIC_THRESHOLD,
+	DEFAULT_DELAY_THRESHOLD_MS,
+	DEFAULT_MIN_REPETITIONS,
+	DEFAULT_MIN_SEQUENCE_LENGTH,
+	DEFAULT_MAX_SEQUENCE_LENGTH,
+} from '../../constants.js'
 
 // ============================================================================
 // Implementation
@@ -73,10 +81,10 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 
 	// ---- Loop Detection Methods ----
 
-	findHotLoops(options?:  LoopDetectionOptions): readonly LoopInfo[] {
-		const threshold = options?.threshold ?? 5
+	findHotLoops(options?: LoopDetectionOptions): readonly LoopInfo[] {
+		const threshold = options?.threshold ?? DEFAULT_HOT_LOOP_THRESHOLD
 		const sccs = this.findStronglyConnectedComponents()
-		const loops:  LoopInfo[] = []
+		const loops: LoopInfo[] = []
 
 		for (const scc of sccs) {
 			if (scc.nodes.length < 2) continue
@@ -456,9 +464,9 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	// ---- Bottleneck Detection Methods ----
 
 	findBottlenecks(options?: BottleneckDetectionOptions): readonly BottleneckInfo[] {
-		const trafficThreshold = options?.trafficThreshold ?? 10
+		const trafficThreshold = options?.trafficThreshold ?? DEFAULT_TRAFFIC_THRESHOLD
 		// TODO: Use delayThreshold for delay-based bottleneck detection
-		const _delayThreshold = options?.delayThreshold ?? 5000
+		const _delayThreshold = options?.delayThreshold ?? DEFAULT_DELAY_THRESHOLD_MS
 		const bottlenecks: BottleneckInfo[] = []
 
 		const nodes = this.#procedural.getNodes()
@@ -489,7 +497,7 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 
 			// Bottleneck if high incoming and low outgoing ratio
 			const congestionScore =
-				outgoingTraffic > 0 ?  incomingTraffic / outgoingTraffic : incomingTraffic
+				outgoingTraffic > 0 ? incomingTraffic / outgoingTraffic : incomingTraffic
 
 			if (incomingTraffic >= trafficThreshold && congestionScore > 2) {
 				bottlenecks.push({
@@ -503,7 +511,7 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 			}
 		}
 
-		this. #emitAnalysisComplete('bottlenecks', bottlenecks)
+		this.#emitAnalysisComplete('bottlenecks', bottlenecks)
 		return bottlenecks
 	}
 
@@ -512,9 +520,9 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	findAutomationOpportunities(
 		options?: AutomationDiscoveryOptions,
 	): readonly AutomationOpportunity[] {
-		const minRepetitions = options?.minRepetitions ?? 5
-		const minSequenceLength = options?.minSequenceLength ?? 2
-		const maxSequenceLength = options?.maxSequenceLength ?? 10
+		const minRepetitions = options?.minRepetitions ?? DEFAULT_MIN_REPETITIONS
+		const minSequenceLength = options?.minSequenceLength ?? DEFAULT_MIN_SEQUENCE_LENGTH
+		const maxSequenceLength = options?.maxSequenceLength ?? DEFAULT_MAX_SEQUENCE_LENGTH
 		const opportunities: AutomationOpportunity[] = []
 
 		// Find repetitive sequences in SCCs
