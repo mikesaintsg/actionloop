@@ -13,29 +13,10 @@
  * - WorkflowAnalyzer: Pattern detection and optimization
  */
 
-// ============================================================================
-// Core Shared Types
-// ============================================================================
+import type { Unsubscribe, Destroyable, SubscriptionToHook } from '@mikesaintsg/core'
 
-/** Unsubscribe function returned from subscriptions */
-export type Unsubscribe = () => void
-
-/** Destroy function for cleanup */
-export type DestroyFn = () => void
-
-/** Destroyable interface for lifecycle management */
-export interface Destroyable {
-	destroy(): void
-}
-
-/** Hook version of subscriptions for options pattern */
-export type SubscriptionToHook<T> = {
-	[K in keyof T as K extends `on${infer E}` ? `on${E}` : never]?: T[K] extends (
-			callback: infer C
-		) => Unsubscribe
-		? C
-		: never
-}
+/** Destroy function type derived from Destroyable interface */
+export type DestroyFn = Destroyable['destroy']
 
 // ============================================================================
 // Actor Types
