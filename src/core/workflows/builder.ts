@@ -5,8 +5,10 @@
  */
 
 import type {
+	Actor,
 	Node,
 	NodeInput,
+	NodeType,
 	Transition,
 	TransitionInput,
 	Procedure,
@@ -86,20 +88,22 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 	// ---- Builder Methods ----
 
 	addNode(input: NodeInput): this {
-		if (! this.#allowDuplicateNodes && this. #nodes.has(input.id)) {
+		if (!this.#allowDuplicateNodes && this.#nodes.has(input.id)) {
 			throw new ActionLoopError(
 				'DUPLICATE_NODE',
 				`Node already exists: ${input.id}`,
-				{ nodeId: input.id }
+				{ nodeId: input.id },
 			)
 		}
 
-		const node: Node = deepFreeze({
-			id: input.id,
-			label: input.label,
-			type: input.type,
-			metadata: input.metadata,
-		})
+		const node: Node = deepFreeze(
+			Object.assign(
+				{ id: input.id },
+				input.label !== undefined ? { label: input.label } : {},
+				input.type !== undefined ? { type: input.type } : {},
+				input.metadata !== undefined ? { metadata: input.metadata } : {},
+			) as Node,
+		)
 
 		this.#nodes.set(node.id, node)
 
@@ -126,7 +130,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		}
 
 		// Remove associated transitions
-		const keysToRemove:  string[] = []
+		const keysToRemove: string[] = []
 		for (const [key, transition] of this.#transitions) {
 			if (transition.from === id || transition.to === id) {
 				keysToRemove.push(key)
@@ -144,7 +148,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 
 		this.#nodes.delete(id)
 
-		for (const listener of this. #nodeRemovedListeners) {
+		for (const listener of this.#nodeRemovedListeners) {
 			listener(id)
 		}
 
@@ -160,12 +164,18 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 			})
 		}
 
-		const updated:  Node = deepFreeze({
-			id: existing.id,
-			label: updates.label ?? existing. label,
-			type: updates. type ?? existing.type,
-			metadata: updates.metadata ?? existing. metadata,
-		})
+		const label = updates.label ?? existing.label
+		const type = updates.type ?? existing.type
+		const metadata = updates.metadata ?? existing.metadata
+
+		const updated: Node = deepFreeze(
+			Object.assign(
+				{ id: existing.id },
+				label !== undefined ? { label } : {},
+				type !== undefined ? { type } : {},
+				metadata !== undefined ? { metadata } : {},
+			) as Node,
+		)
 
 		this.#nodes.set(id, updated)
 		this.#emitValidation()
@@ -175,29 +185,33 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 	addTransition(input: TransitionInput): this {
 		const key = createTransitionKey(input.from, input.to)
 
-		if (this.#transitions. has(key)) {
+		if (this.#transitions.has(key)) {
 			throw new ActionLoopError(
 				'DUPLICATE_TRANSITION',
 				`Transition already exists: ${input.from} -> ${input.to}`,
-				{ transitionKey: key }
+				{ transitionKey: key },
 			)
 		}
 
 		// Auto-create nodes if they don't exist
-		if (!this.#nodes.has(input. from)) {
+		if (!this.#nodes.has(input.from)) {
 			this.addNode({ id: input.from })
 		}
-		if (!this.#nodes.has(input. to)) {
+		if (!this.#nodes.has(input.to)) {
 			this.addNode({ id: input.to })
 		}
 
-		const transition:  Transition = deepFreeze({
-			from: input.from,
-			to: input.to,
-			weight: input.weight,
-			actor: input.actor,
-			metadata: input.metadata,
-		})
+		const transition: Transition = deepFreeze(
+			Object.assign(
+				{
+					from: input.from,
+					to: input.to,
+					weight: input.weight,
+					actor: input.actor,
+				},
+				input.metadata !== undefined ? { metadata: input.metadata } : {},
+			) as Transition,
+		)
 
 		this.#transitions.set(key, transition)
 
@@ -219,11 +233,11 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 	removeTransition(from: string, to: string): this {
 		const key = createTransitionKey(from, to)
 
-		if (!this.#transitions. has(key)) {
+		if (!this.#transitions.has(key)) {
 			throw new ActionLoopError(
 				'INVALID_TRANSITION',
 				`Transition not found: ${from} -> ${to}`,
-				{ transitionKey: key }
+				{ transitionKey: key },
 			)
 		}
 
@@ -240,7 +254,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 	updateTransition(
 		from: string,
 		to: string,
-		updates:  Partial<TransitionInput>
+		updates: Partial<TransitionInput>,
 	): this {
 		const key = createTransitionKey(from, to)
 		const existing = this.#transitions.get(key)
@@ -249,17 +263,22 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 			throw new ActionLoopError(
 				'INVALID_TRANSITION',
 				`Transition not found: ${from} -> ${to}`,
-				{ transitionKey: key }
+				{ transitionKey: key },
 			)
 		}
 
-		const updated: Transition = deepFreeze({
-			from: existing.from,
-			to: existing.to,
-			weight: updates.weight ?? existing.weight,
-			actor: updates.actor ?? existing.actor,
-			metadata: updates.metadata ?? existing.metadata,
-		})
+		const metadata = updates.metadata ?? existing.metadata
+		const updated: Transition = deepFreeze(
+			Object.assign(
+				{
+					from: existing.from,
+					to: existing.to,
+					weight: updates.weight ?? existing.weight,
+					actor: updates.actor ?? existing.actor,
+				},
+				metadata !== undefined ? { metadata } : {},
+			) as Transition,
+		)
 
 		this.#transitions.set(key, updated)
 		this.#emitValidation()
@@ -270,17 +289,21 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		if (this.#procedures.has(input.id)) {
 			throw new ActionLoopError(
 				'INVALID_PROCEDURE',
-				`Procedure already exists: ${input.id}`
+				`Procedure already exists: ${input.id}`,
 			)
 		}
 
-		const procedure: Procedure = deepFreeze({
-			id: input. id,
-			actions: input. actions,
-			metadata: input. metadata,
-		})
+		const procedure: Procedure = deepFreeze(
+			Object.assign(
+				{
+					id: input.id,
+					actions: input.actions,
+				},
+				input.metadata !== undefined ? { metadata: input.metadata } : {},
+			) as Procedure,
+		)
 
-		this.#procedures.set(procedure. id, procedure)
+		this.#procedures.set(procedure.id, procedure)
 		this.#emitValidation()
 		return this
 	}
@@ -289,7 +312,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		if (!this.#procedures.has(id)) {
 			throw new ActionLoopError(
 				'INVALID_PROCEDURE',
-				`Procedure not found: ${id}`
+				`Procedure not found: ${id}`,
 			)
 		}
 
@@ -303,15 +326,20 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		if (!existing) {
 			throw new ActionLoopError(
 				'INVALID_PROCEDURE',
-				`Procedure not found: ${id}`
+				`Procedure not found: ${id}`,
 			)
 		}
 
-		const updated:  Procedure = deepFreeze({
-			id: existing.id,
-			actions: updates.actions ?? existing. actions,
-			metadata: updates. metadata ??  existing.metadata,
-		})
+		const metadata = updates.metadata ?? existing.metadata
+		const updated: Procedure = deepFreeze(
+			Object.assign(
+				{
+					id: existing.id,
+					actions: updates.actions ?? existing.actions,
+				},
+				metadata !== undefined ? { metadata } : {},
+			) as Procedure,
+		)
 
 		this.#procedures.set(id, updated)
 		this.#emitValidation()
@@ -417,7 +445,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		if (!validation.valid) {
 			throw new ActionLoopError(
 				'BUILD_FAILED',
-				`Cannot build invalid graph: ${validation.errors[0]?.message ??  'Unknown error'}`
+				`Cannot build invalid graph: ${validation.errors[0]?.message ??  'Unknown error'}`,
 			)
 		}
 
@@ -460,7 +488,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 	}
 
 	onTransitionRemoved(
-		callback: (from: string, to: string) => void
+		callback: (from: string, to: string) => void,
 	): Unsubscribe {
 		this.#transitionRemovedListeners.add(callback)
 		return () => {
@@ -469,7 +497,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 	}
 
 	onValidation(
-		callback: (results: readonly ValidationResult[]) => void
+		callback: (results: readonly ValidationResult[]) => void,
 	): Unsubscribe {
 		this.#validationListeners. add(callback)
 		return () => {
@@ -517,7 +545,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 			lines.push('procedures:')
 			for (const procedure of this.#procedures.values()) {
 				lines.push(`  - id: "${procedure.id}"`)
-				lines.push(`    actions: `)
+				lines.push('    actions: ')
 				for (const action of procedure.actions) {
 					lines.push(`      - "${action}"`)
 				}
@@ -532,11 +560,8 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		try {
 			definition = JSON.parse(json) as GraphDefinition
 		} catch (error) {
-			throw new ActionLoopError(
-				'IMPORT_FAILED',
-				'Failed to parse JSON',
-				{ cause: error instanceof Error ? error : undefined }
-			)
+			const data = error instanceof Error ? { cause: error } : undefined
+			throw new ActionLoopError('IMPORT_FAILED', 'Failed to parse JSON', data)
 		}
 
 		return this.fromDefinition(definition)
@@ -546,17 +571,11 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		// Simple YAML parsing without external dependencies
 		// Supports basic structure only
 		try {
-			const definition:  GraphDefinition = {
-				nodes: [],
-				transitions: [],
-				procedures: [],
-			}
-
-			const nodes:  NodeInput[] = []
+			const nodes: NodeInput[] = []
 			const transitions: TransitionInput[] = []
 			const procedures: ProcedureInput[] = []
 
-			let currentSection:  'nodes' | 'transitions' | 'procedures' | null = null
+			let currentSection: 'nodes' | 'transitions' | 'procedures' | null = null
 			let currentItem: Record<string, unknown> | null = null
 			let currentActions: string[] = []
 
@@ -586,15 +605,11 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 					// Save previous item
 					if (currentItem && currentSection) {
 						if (currentSection === 'nodes') {
-							nodes.push(currentItem as NodeInput)
+							this.#saveNodeFromYAML(nodes, currentItem)
 						} else if (currentSection === 'transitions') {
-							transitions.push(currentItem as TransitionInput)
+							this.#saveTransitionFromYAML(transitions, currentItem)
 						} else if (currentSection === 'procedures') {
-							const proc = currentItem as Record<string, unknown>
-							procedures.push({
-								id: proc.id as string,
-								actions: currentActions,
-							})
+							this.#saveProcedureFromYAML(procedures, currentItem, currentActions)
 							currentActions = []
 						}
 					}
@@ -602,15 +617,18 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 					// Start new item
 					const content = trimmed.slice(2)
 					if (content.includes(':')) {
-						const [key, value] = content.split(': ').map((s) => s.trim())
-						currentItem = { [key]:  this.#parseYAMLValue(value) }
+						const splitIndex = content.indexOf(':')
+						const key = content.slice(0, splitIndex).trim()
+						const value = content.slice(splitIndex + 1).trim()
+						currentItem = {}
+						currentItem[key] = this.#parseYAMLValue(value)
 					} else {
 						// It's an array item for actions
 						currentActions.push(this.#parseYAMLValue(content) as string)
 					}
 				} else if (trimmed.includes(':') && currentItem) {
 					const colonIndex = trimmed.indexOf(':')
-					const key = trimmed. slice(0, colonIndex).trim()
+					const key = trimmed.slice(0, colonIndex).trim()
 					const value = trimmed.slice(colonIndex + 1).trim()
 
 					if (key === 'actions') {
@@ -618,25 +636,17 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 					} else {
 						currentItem[key] = this.#parseYAMLValue(value)
 					}
-				} else if (trimmed.startsWith('- ') && currentSection === 'procedures') {
-					// Action array item
-					const value = trimmed.slice(2).trim()
-					currentActions.push(this.#parseYAMLValue(value) as string)
 				}
 			}
 
 			// Save last item
 			if (currentItem && currentSection) {
 				if (currentSection === 'nodes') {
-					nodes.push(currentItem as NodeInput)
+					this.#saveNodeFromYAML(nodes, currentItem)
 				} else if (currentSection === 'transitions') {
-					transitions.push(currentItem as TransitionInput)
+					this.#saveTransitionFromYAML(transitions, currentItem)
 				} else if (currentSection === 'procedures') {
-					const proc = currentItem as Record<string, unknown>
-					procedures.push({
-						id: proc.id as string,
-						actions: currentActions,
-					})
+					this.#saveProcedureFromYAML(procedures, currentItem, currentActions)
 				}
 			}
 
@@ -646,15 +656,64 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 				procedures,
 			})
 		} catch (error) {
-			throw new ActionLoopError(
-				'IMPORT_FAILED',
-				'Failed to parse YAML',
-				{ cause: error instanceof Error ? error : undefined }
-			)
+			if (error instanceof ActionLoopError) {
+				throw error
+			}
+			const data = error instanceof Error ? { cause: error } : undefined
+			throw new ActionLoopError('IMPORT_FAILED', 'Failed to parse YAML', data)
 		}
 	}
 
-	#parseYAMLValue(value:  string): string | number | boolean {
+	#saveNodeFromYAML(nodes: NodeInput[], item: Record<string, unknown>): void {
+		const id = item.id
+		if (typeof id !== 'string') return
+
+		const node = Object.assign(
+			{ id },
+			typeof item.label === 'string' ? { label: item.label } : {},
+			typeof item.type === 'string' ? { type: item.type as NodeType } : {},
+		) as NodeInput
+		nodes.push(node)
+	}
+
+	#saveTransitionFromYAML(transitions: TransitionInput[], item: Record<string, unknown>): void {
+		const from = item.from
+		const to = item.to
+		const weight = item.weight
+		const actor = item.actor
+
+		if (
+			typeof from !== 'string' ||
+			typeof to !== 'string' ||
+			typeof weight !== 'number' ||
+			typeof actor !== 'string'
+		) {
+			return
+		}
+
+		transitions.push({
+			from,
+			to,
+			weight,
+			actor: actor as Actor,
+		})
+	}
+
+	#saveProcedureFromYAML(
+		procedures: ProcedureInput[],
+		item: Record<string, unknown>,
+		actions: string[],
+	): void {
+		const id = item.id
+		if (typeof id !== 'string') return
+
+		procedures.push({
+			id,
+			actions,
+		})
+	}
+
+	#parseYAMLValue(value: string): string | number | boolean {
 		// Remove quotes
 		if (
 			(value.startsWith('"') && value.endsWith('"')) ||
@@ -730,7 +789,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
  * ```
  */
 export function createWorkflowBuilder(
-	options?:  WorkflowBuilderOptions
+	options?:  WorkflowBuilderOptions,
 ): WorkflowBuilderInterface {
-	return new WorkflowBuilderImpl(options)
+	return new WorkflowBuilder(options)
 }

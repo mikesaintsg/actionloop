@@ -34,7 +34,7 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 
 	constructor(
 		procedural: ProceduralGraphInterface,
-		options: WorkflowValidatorOptions = {}
+		options: WorkflowValidatorOptions = {},
 	) {
 		this.#procedural = procedural
 		this.#strictMode = options.strictMode ?? false
@@ -201,20 +201,28 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 		const transitions = this.#procedural.getAllTransitions()
 
 		for (const transition of transitions) {
-			const guard = transition.metadata?. guard
+			const guard = transition.metadata?.guard
 			if (!guard) continue
 
-			const key = createTransitionKey(transition. from, transition.to)
+			const key = createTransitionKey(transition.from, transition.to)
 
 			// Basic syntax validation (no actual evaluation)
 			const valid = this.#isValidGuardSyntax(guard)
 
-			results.push({
-				transitionKey: key,
-				guard,
-				valid,
-				error: valid ? undefined : 'Invalid guard expression syntax',
-			})
+			if (valid) {
+				results.push({
+					transitionKey: key,
+					guard,
+					valid: true,
+				})
+			} else {
+				results.push({
+					transitionKey: key,
+					guard,
+					valid: false,
+					error: 'Invalid guard expression syntax',
+				})
+			}
 		}
 
 		return results
@@ -269,10 +277,10 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 				const from = procedure.actions[i]
 				const to = procedure.actions[i + 1]
 
-				if (!this.#procedural.hasTransition(from, to)) {
+				if (from && to && !this.#procedural.hasTransition(from, to)) {
 					results.push({
 						passed: false,
-						message:  `Procedure '${procedure.id}' has disconnected actions:  '${from}' -> '${to}'`,
+						message: `Procedure '${procedure.id}' has disconnected actions: '${from}' -> '${to}'`,
 						severity: 'warning' as ValidationSeverity,
 						suggestion: `Add transition from '${from}' to '${to}'`,
 					})
@@ -309,15 +317,23 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 		}
 
 		// BFS from first node
-		const startNode = nodes[0]. id
+		const firstNode = nodes[0]
+		if (!firstNode) {
+			return {
+				passed: true,
+				message: 'Empty graph is trivially connected',
+				severity: 'info' as ValidationSeverity,
+			}
+		}
+		const startNode = firstNode.id
 		const queue = [startNode]
 		visited.add(startNode)
 
 		while (queue.length > 0) {
 			const current = queue.shift()
-			if (! current) continue
+			if (!current) continue
 
-			const neighbors = adjacency.get(current) ??  new Set()
+			const neighbors = adjacency.get(current) ?? new Set()
 			for (const neighbor of neighbors) {
 				if (!visited.has(neighbor)) {
 					visited.add(neighbor)
@@ -401,7 +417,7 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 	// ---- Subscription Methods ----
 
 	onValidationComplete(
-		callback: (results: readonly ValidationResult[]) => void
+		callback: (results: readonly ValidationResult[]) => void,
 	): Unsubscribe {
 		this. #validationCompleteListeners. add(callback)
 		return () => {
@@ -438,7 +454,7 @@ class WorkflowValidator implements WorkflowValidatorInterface {
  */
 export function createWorkflowValidator(
 	procedural: ProceduralGraphInterface,
-	options?:  WorkflowValidatorOptions
+	options?:  WorkflowValidatorOptions,
 ): WorkflowValidatorInterface {
-	return new WorkflowValidatorImpl(procedural, options)
+	return new WorkflowValidator(procedural, options)
 }

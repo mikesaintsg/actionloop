@@ -4,7 +4,7 @@
  * Utility functions for ActionLoop.
  */
 
-import type { IsActionLoopSupported } from './types.js'
+import type { Actor, IsActionLoopSupported, Node, Transition } from './types.js'
 
 // ============================================================================
 // Environment Detection
@@ -39,6 +39,77 @@ export const isActionLoopSupported: IsActionLoopSupported = (): boolean => {
 }
 
 // ============================================================================
+// Type Guards
+// ============================================================================
+
+const VALID_ACTORS = new Set<string>(['user', 'system', 'automation'])
+
+/**
+ * Check if a value is a valid Actor type.
+ *
+ * @param value - Value to check
+ * @returns True if value is a valid Actor
+ */
+export function isActor(value: unknown): value is Actor {
+	return typeof value === 'string' && VALID_ACTORS.has(value)
+}
+
+/**
+ * Check if a value is a valid Node.
+ *
+ * @param value - Value to check
+ * @returns True if value is a valid Node
+ */
+export function isNode(value: unknown): value is Node {
+	if (value === null || typeof value !== 'object') {
+		return false
+	}
+
+	const obj = value as Record<string, unknown>
+
+	// Required property
+	if (typeof obj.id !== 'string') {
+		return false
+	}
+
+	// Optional properties with correct types if present
+	if (obj.label !== undefined && typeof obj.label !== 'string') {
+		return false
+	}
+
+	if (obj.type !== undefined) {
+		const validTypes = new Set(['action', 'session', 'system', 'placeholder'])
+		if (typeof obj.type !== 'string' || !validTypes.has(obj.type)) {
+			return false
+		}
+	}
+
+	return true
+}
+
+/**
+ * Check if a value is a valid Transition.
+ *
+ * @param value - Value to check
+ * @returns True if value is a valid Transition
+ */
+export function isTransition(value: unknown): value is Transition {
+	if (value === null || typeof value !== 'object') {
+		return false
+	}
+
+	const obj = value as Record<string, unknown>
+
+	// Required properties
+	if (typeof obj.from !== 'string') return false
+	if (typeof obj.to !== 'string') return false
+	if (typeof obj.weight !== 'number') return false
+	if (!isActor(obj.actor)) return false
+
+	return true
+}
+
+// ============================================================================
 // ID Generation
 // ============================================================================
 
@@ -64,8 +135,8 @@ export function generateId(): string {
  * @param to - Target node ID
  * @returns Transition key string
  */
-export function createTransitionKey(from: string, to:  string): string {
-	return `${from}:: ${to}`
+export function createTransitionKey(from: string, to: string): string {
+	return `${from}->${to}`
 }
 
 /**
@@ -75,13 +146,15 @@ export function createTransitionKey(from: string, to:  string): string {
  * @returns Tuple of [from, to] or undefined if invalid
  */
 export function parseTransitionKey(
-	key: string
+	key: string,
 ): readonly [string, string] | undefined {
-	const parts = key.split('::')
-	if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
+	const parts = key.split('->')
+	const from = parts[0]
+	const to = parts[1]
+	if (parts.length !== 2 || !from || !to) {
 		return undefined
 	}
-	return [parts[0], parts[1]] as const
+	return [from, to] as const
 }
 
 // ============================================================================
@@ -99,7 +172,7 @@ export function parseTransitionKey(
 export function createWeightKey(
 	from: string,
 	to: string,
-	actor:  string
+	actor:  string,
 ): string {
 	return `${from}::${to}::${actor}`
 }

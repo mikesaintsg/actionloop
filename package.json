@@ -47,7 +47,7 @@
 		"check": "npm run decache && tsc --noEmit",
 		"check:showcase": "npm run decache && tsc --noEmit -p configs/tsconfig.showcase.json",
 		"test": "npm run decache && vitest run --no-cache",
-		"format": "eslint ../../Downloads --fix",
+		"format": "eslint src tests --fix",
 		"show": "npm run build:showcase && npm run copy:showcase && npm run clean:showcase",
 		"clean:dist": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\"",
 		"clean:showcase": "node -e \"try{require('fs').rmSync('dist/showcase',{recursive:true,force:true})}catch(e){}\"",

@@ -4,7 +4,6 @@
  * Core module exports - factory functions and utilities.
  */
 
-
 // Errors
 export * from './errors.js'
 
