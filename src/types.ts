@@ -4,16 +4,53 @@
  * Type definitions for the ActionLoop Predictive Procedural Action Loop System (PPALS).
  * All public types and interfaces are defined here as the SOURCE OF TRUTH.
  *
- * This package provides:
+ * This package provides: 
  * - ProceduralGraph: Static graph of valid transitions
- * - PredictiveGraph: Dynamic weight overlay for adaptive predictions
+ * - PredictiveGraph:  Dynamic weight overlay for adaptive predictions
  * - WorkflowEngine: Runtime engine for recording and prediction
- * - WorkflowBuilder: Programmatic graph construction
+ * - WorkflowBuilder:  Programmatic graph construction
  * - WorkflowValidator: Static analysis and validation
  * - WorkflowAnalyzer: Pattern detection and optimization
+ * - ActivityTracker:  Engagement-aware dwell time tracking
+ *
+ * Adapter interfaces are defined in @mikesaintsg/core and implemented in @mikesaintsg/adapters. 
  */
 
-import type { Unsubscribe, Destroyable, SubscriptionToHook } from '@mikesaintsg/core'
+import type {
+	Unsubscribe,
+	Destroyable,
+	SubscriptionToHook,
+	// Shared ActionLoop types from core
+	EngagementState,
+	DwellRecord,
+	PartialDwellRecord,
+	TransitionEvent,
+	EventFilter,
+	ExportedPredictiveGraph as CoreExportedPredictiveGraph,
+	DecayAlgorithm,
+	DecayConfig,
+	ActivityTrackerInterface,
+	ActivityTrackerConfig,
+	ActivityTrackerSubscriptions,
+	EventStorePersistenceAdapterInterface,
+	WeightPersistenceAdapterInterface,
+} from '@mikesaintsg/core'
+
+// Re-export shared types from core for convenience
+export type {
+	EngagementState,
+	DwellRecord,
+	PartialDwellRecord,
+	TransitionEvent,
+	EventFilter,
+	DecayAlgorithm,
+	DecayConfig,
+	ActivityTrackerInterface,
+	ActivityTrackerConfig,
+	ActivityTrackerSubscriptions,
+	EventStorePersistenceAdapterInterface,
+	WeightPersistenceAdapterInterface,
+} from '@mikesaintsg/core'
 
 /** Destroy function type derived from Destroyable interface */
 export type DestroyFn = Destroyable['destroy']
@@ -53,7 +90,7 @@ export interface NodeInput {
 	readonly id: string
 	readonly label?: string
 	readonly type?:  NodeType
-	readonly metadata?:  Readonly<NodeMetadata>
+	readonly metadata?: Readonly<NodeMetadata>
 }
 
 // ============================================================================
@@ -65,7 +102,7 @@ export interface TransitionMetadata {
 	readonly guard?: string
 	readonly version?: string
 	readonly relevantPaths?: readonly string[]
-	readonly description?: string
+	readonly description?:  string
 }
 
 /** Enhanced transition metadata with session chain support */
@@ -84,25 +121,25 @@ export interface ChainLink {
 /** Workflow transition definition */
 export interface Transition {
 	readonly from: string
-	readonly to: string
-	readonly weight: number
+	readonly to:  string
+	readonly weight:  number
 	readonly actor: Actor
 	readonly metadata?:  Readonly<TransitionMetadata>
 }
 
 /** Enhanced transition with extended metadata */
 export interface EnhancedTransition {
-	readonly from: string
+	readonly from:  string
 	readonly to: string
 	readonly weight: number
 	readonly actor: Actor
-	readonly metadata?: Readonly<EnhancedTransitionMetadata>
+	readonly metadata?:  Readonly<EnhancedTransitionMetadata>
 }
 
 /** Transition input for builder operations */
 export interface TransitionInput {
 	readonly from: string
-	readonly to:  string
+	readonly to: string
 	readonly weight: number
 	readonly actor: Actor
 	readonly metadata?:  Readonly<TransitionMetadata>
@@ -112,8 +149,8 @@ export interface TransitionInput {
 export interface WeightedTransition {
 	readonly to: string
 	readonly weight: number
-	readonly baseWeight:  number
-	readonly predictiveWeight:  number
+	readonly baseWeight: number
+	readonly predictiveWeight: number
 }
 
 // ============================================================================
@@ -137,7 +174,7 @@ export interface Procedure {
 /** Procedure input for builder operations */
 export interface ProcedureInput {
 	readonly id: string
-	readonly actions: readonly string[]
+	readonly actions:  readonly string[]
 	readonly metadata?: Readonly<ProcedureMetadata>
 }
 
@@ -148,7 +185,7 @@ export interface ProcedureInput {
 /** Base context for all engine operations */
 export interface BaseContext {
 	readonly actor: Actor
-	readonly sessionId:  string
+	readonly sessionId: string
 	readonly path: string
 }
 
@@ -188,11 +225,19 @@ export interface SessionInfo {
 	readonly nodeHistory?: readonly string[]
 }
 
+/** Extended session info with activity data */
+export interface ActivitySessionInfo extends SessionInfo {
+	readonly dwellHistory:  readonly DwellRecord[]
+	readonly totalActiveTime: number
+	readonly totalIdleTime: number
+	readonly currentEngagement: EngagementState
+}
+
 /** Session resume options */
 export interface SessionResumeOptions {
 	readonly previousNode:  string
 	readonly actor: Actor
-	readonly path?: string
+	readonly path?:  string
 }
 
 /** Chain options for retrieving action chains */
@@ -201,6 +246,7 @@ export interface ChainOptions {
 	readonly startTime?: number
 	readonly endTime?: number
 	readonly includeMetadata?: boolean
+	readonly includeDwell?: boolean
 }
 
 /** Action chain representing session history */
@@ -208,6 +254,8 @@ export interface ActionChain {
 	readonly events: readonly ActionEvent[]
 	readonly sessionIds: readonly string[]
 	readonly totalDuration: number
+	readonly totalActiveTime?:  number
+	readonly totalIdleTime?: number
 }
 
 /** Action event in the chain */
@@ -221,7 +269,9 @@ export interface ActionEvent {
 	readonly duration?:  number
 	readonly sessionElapsed:  number
 	readonly eventType: ActionEventType
-	readonly metadata?:  Readonly<Record<string, unknown>>
+	readonly engagement?:  EngagementState
+	readonly dwell?: DwellRecord
+	readonly metadata?: Readonly<Record<string, unknown>>
 }
 
 /** Action event types */
@@ -229,7 +279,7 @@ export type ActionEventType = 'transition' | 'session_start' | 'session_end'
 
 /** Placeholder event for chain compression */
 export interface PlaceholderEvent {
-	readonly id: string
+	readonly id:  string
 	readonly type: 'placeholder'
 	readonly originalEventCount: number
 	readonly timeSpan: TimeSpan
@@ -240,7 +290,7 @@ export interface PlaceholderEvent {
 /** Time span for placeholder events */
 export interface TimeSpan {
 	readonly start: number
-	readonly end: number
+	readonly end:  number
 }
 
 /** Chain truncation strategy */
@@ -255,23 +305,61 @@ export interface PreloadRecord {
 	readonly from: string
 	readonly to: string
 	readonly actor: Actor
-	readonly count:  number
+	readonly count: number
 	readonly path?:  string
 }
 
 // ============================================================================
-// Decay Algorithm Types
+// Cold-Start Types
 // ============================================================================
 
-/** Decay algorithm types */
-export type DecayAlgorithm = 'halflife' | 'ewma' | 'linear' | 'none'
+/** Cold-start strategy types */
+export type ColdStartStrategy = 'uniform' | 'procedural-weight' | 'preload' | 'hybrid'
 
-/** Decay configuration */
-export interface DecayConfig {
-	readonly algorithm: DecayAlgorithm
-	readonly halfLifeMs?:  number
-	readonly decayFactor?: number
-	readonly minWeight?: number
+/** Cold-start configuration */
+export interface ColdStartConfig {
+	/** Strategy for handling insufficient data */
+	readonly strategy: ColdStartStrategy
+	/** Minimum transitions before predictions are considered "warm" */
+	readonly warmupThreshold: number
+	/** Preloaded records for initial state (used with 'preload' and 'hybrid' strategies) */
+	readonly preloadRecords?:  readonly PreloadRecord[]
+}
+
+// ============================================================================
+// Confidence Types
+// ============================================================================
+
+/** Confidence factors breakdown */
+export interface ConfidenceFactors {
+	/** Weight based on historical frequency (0.0–1.0) */
+	readonly frequency:  number
+	/** Weight based on recent activity (0.0–1.0) */
+	readonly recency: number
+	/** Weight based on engagement quality (0.0–1.0) */
+	readonly engagement:  number
+	/** Weight based on sample size reliability (0.0–1.0) */
+	readonly sampleSize: number
+}
+
+/** Prediction result with confidence */
+export interface PredictionResult {
+	readonly nodeId: string
+	readonly score: number
+	readonly baseWeight: number
+	readonly predictiveWeight: number
+	readonly confidence:  number
+	readonly factors: ConfidenceFactors
+}
+
+/** Detailed prediction response */
+export interface DetailedPrediction {
+	readonly predictions: readonly PredictionResult[]
+	readonly currentNode: string
+	readonly context: PredictionContext
+	readonly computedAt: number
+	readonly warmupComplete: boolean
+	readonly transitionCount: number
 }
 
 // ============================================================================
@@ -281,7 +369,7 @@ export interface DecayConfig {
 /** Graph statistics */
 export interface GraphStats {
 	readonly nodeCount: number
-	readonly transitionCount: number
+	readonly transitionCount:  number
 	readonly procedureCount: number
 	readonly actorCounts:  Readonly<Record<Actor, number>>
 }
@@ -291,7 +379,33 @@ export interface PredictiveGraphStats extends GraphStats {
 	readonly totalWeightUpdates: number
 	readonly lastUpdateTime: number
 	readonly modelId: string
+	readonly warmupComplete: boolean
 }
+
+// ============================================================================
+// Graph Version Types
+// ============================================================================
+
+/** Graph version metadata */
+export interface GraphVersion {
+	readonly version: string
+	readonly createdAt: number
+	readonly migratedFrom?: string
+	readonly breaking:  boolean
+}
+
+/** Migration function type */
+export type GraphMigration = (
+	oldGraph: ExportedProceduralGraph,
+	oldVersion: string
+) => ExportedProceduralGraph
+
+// ============================================================================
+// Multi-Tenancy Types
+// ============================================================================
+
+/** Isolation level for multi-tenant deployments */
+export type IsolationLevel = 'strict' | 'shared-procedural'
 
 // ============================================================================
 // Validation Types
@@ -330,7 +444,7 @@ export interface BoundaryCheck {
 	readonly hasStartNodes: boolean
 	readonly hasEndNodes: boolean
 	readonly startNodes: readonly string[]
-	readonly endNodes: readonly string[]
+	readonly endNodes:  readonly string[]
 	readonly missingStart: boolean
 	readonly missingEnd: boolean
 }
@@ -361,7 +475,7 @@ export type LoopType = 'hot' | 'infinite' | 'unproductive' | 'hierarchical' | 'a
 
 /** Loop detection options */
 export interface LoopDetectionOptions {
-	readonly threshold?: number
+	readonly threshold?:  number
 	readonly maxLength?: number
 	readonly minFrequency?: number
 }
@@ -372,7 +486,7 @@ export interface BottleneckInfo {
 	readonly incomingTraffic: number
 	readonly outgoingTraffic: number
 	readonly avgDelay: number
-	readonly maxDelay: number
+	readonly maxDelay:  number
 	readonly congestionScore: number
 }
 
@@ -409,7 +523,7 @@ export interface SCC {
 	readonly id: string
 	readonly nodes: readonly string[]
 	readonly entryPoints: readonly string[]
-	readonly exitPoints: readonly string[]
+	readonly exitPoints:  readonly string[]
 }
 
 /** Edge classification from DFS */
@@ -457,7 +571,7 @@ export interface PatternInfo {
 /** Analysis summary */
 export interface AnalysisSummary {
 	readonly loopCount: number
-	readonly bottleneckCount: number
+	readonly bottleneckCount:  number
 	readonly automationOpportunityCount: number
 	readonly sccCount: number
 	readonly avgPathLength: number
@@ -472,18 +586,15 @@ export interface AnalysisSummary {
 export interface ExportedProceduralGraph {
 	readonly version: number
 	readonly exportedAt: number
-	readonly nodes:  readonly Node[]
+	readonly graphVersion?:  GraphVersion
+	readonly nodes: readonly Node[]
 	readonly transitions: readonly Transition[]
-	readonly procedures: readonly Procedure[]
+	readonly procedures:  readonly Procedure[]
 }
 
-/** Exported predictive graph for persistence */
-export interface ExportedPredictiveGraph {
-	readonly version: number
-	readonly exportedAt: number
-	readonly modelId: string
-	readonly weights: readonly ExportedWeight[]
-	readonly decayConfig: DecayConfig
+/** Exported predictive graph for persistence (extends core type) */
+export interface ExportedPredictiveGraph extends CoreExportedPredictiveGraph {
+	readonly warmupThreshold?:  number
 }
 
 /** Exported weight entry */
@@ -501,28 +612,7 @@ export interface GraphDefinition {
 	readonly nodes?:  readonly NodeInput[]
 	readonly transitions:  readonly TransitionInput[]
 	readonly procedures?:  readonly ProcedureInput[]
-	readonly version?:  string
-}
-
-// ============================================================================
-// Prediction Result Types
-// ============================================================================
-
-/** Prediction result with weights */
-export interface PredictionResult {
-	readonly nodeId: string
-	readonly score: number
-	readonly baseWeight: number
-	readonly predictiveWeight: number
-	readonly confidence: number
-}
-
-/** Detailed prediction response */
-export interface DetailedPrediction {
-	readonly predictions: readonly PredictionResult[]
-	readonly currentNode: string
-	readonly context: PredictionContext
-	readonly computedAt: number
+	readonly version?: string
 }
 
 // ============================================================================
@@ -570,7 +660,7 @@ export interface ProceduralGraphSubscriptions {
 /** Predictive graph subscriptions */
 export interface PredictiveGraphSubscriptions {
 	onWeightUpdate(
-		callback: (from: string, to: string, actor: Actor, weight: number) => void
+		callback: (from: string, to:  string, actor: Actor, weight:  number) => void
 	): Unsubscribe
 	onDecay(callback: (decayedCount: number) => void): Unsubscribe
 }
@@ -580,16 +670,16 @@ export interface WorkflowEngineSubscriptions {
 	onTransition(callback: TransitionCallback): Unsubscribe
 	onPrediction(callback: PredictionCallback): Unsubscribe
 	onSessionStart(callback: SessionCallback): Unsubscribe
-	onSessionEnd(callback: SessionEndCallback): Unsubscribe
+	onSessionEnd(callback:  SessionEndCallback): Unsubscribe
 	onError(callback: ErrorCallback): Unsubscribe
 }
 
 /** Workflow builder subscriptions */
 export interface WorkflowBuilderSubscriptions {
-	onNodeAdded(callback: (node:  Node) => void): Unsubscribe
+	onNodeAdded(callback: (node: Node) => void): Unsubscribe
 	onNodeRemoved(callback: (nodeId: string) => void): Unsubscribe
 	onTransitionAdded(callback: (transition:  Transition) => void): Unsubscribe
-	onTransitionRemoved(callback: (from: string, to: string) => void): Unsubscribe
+	onTransitionRemoved(callback: (from: string, to:  string) => void): Unsubscribe
 	onValidation(callback: ValidationCallback): Unsubscribe
 }
 
@@ -603,7 +693,7 @@ export interface WorkflowValidatorSubscriptions {
 /** Workflow analyzer subscriptions */
 export interface WorkflowAnalyzerSubscriptions {
 	onAnalysisComplete(
-		callback:  (analysisType: string, results: unknown) => void
+		callback: (analysisType: string, results: unknown) => void
 	): Unsubscribe
 	onPatternDetected(callback: (pattern: PatternInfo) => void): Unsubscribe
 }
@@ -617,27 +707,45 @@ export interface ProceduralGraphOptions
 	extends SubscriptionToHook<ProceduralGraphSubscriptions> {
 	readonly nodes?: readonly NodeInput[]
 	readonly transitions:  readonly TransitionInput[]
-	readonly procedures?: readonly ProcedureInput[]
+	readonly procedures?:  readonly ProcedureInput[]
+	readonly version?: GraphVersion
 	readonly validateOnCreate?: boolean
 }
 
 /** Predictive graph options */
 export interface PredictiveGraphOptions
 	extends SubscriptionToHook<PredictiveGraphSubscriptions> {
+	// Algorithm configuration
 	readonly decayAlgorithm?: DecayAlgorithm
 	readonly decayFactor?: number
 	readonly halfLifeMs?: number
 	readonly minWeight?: number
-	readonly preloadRecords?: readonly PreloadRecord[]
+
+	// Cold-start configuration
+	readonly coldStart?: ColdStartConfig
+
+	// Opt-in persistence adapter
+	readonly persistence?: WeightPersistenceAdapterInterface
 }
 
 /** Workflow engine options */
 export interface WorkflowEngineOptions
 	extends SubscriptionToHook<WorkflowEngineSubscriptions> {
-	readonly validateTransitions?: boolean
+	// Opt-in adapters
+	readonly activity?: ActivityTrackerInterface
+	readonly eventPersistence?: EventStorePersistenceAdapterInterface
+
+	// Session configuration
 	readonly trackSessions?: boolean
 	readonly maxSessionDuration?: number
 	readonly sessionTimeoutMs?: number
+
+	// Validation configuration
+	readonly validateTransitions?: boolean
+
+	// Multi-tenancy configuration
+	readonly namespace?: string
+	readonly isolationLevel?: IsolationLevel
 }
 
 /** Workflow builder options */
@@ -669,7 +777,7 @@ export interface WorkflowAnalyzerOptions
 
 /** ActionLoop error codes */
 export type ActionLoopErrorCode =
-// Graph errors
+	// Graph errors
 	| 'INVALID_TRANSITION'
 	| 'NODE_NOT_FOUND'
 	| 'DUPLICATE_NODE'
@@ -699,6 +807,10 @@ export type ActionLoopErrorCode =
 	// Predictive errors
 	| 'MODEL_MISMATCH'
 	| 'WEIGHT_OVERFLOW'
+	// Persistence errors
+	| 'PERSISTENCE_FAILED'
+	| 'LOAD_FAILED'
+	| 'SAVE_FAILED'
 	// General
 	| 'UNKNOWN'
 
@@ -706,9 +818,9 @@ export type ActionLoopErrorCode =
 export interface ActionLoopErrorData {
 	readonly code: ActionLoopErrorCode
 	readonly message: string
-	readonly cause?: Error
+	readonly cause?:  Error
 	readonly nodeId?: string
-	readonly transitionKey?: string
+	readonly transitionKey?:  string
 	readonly sessionId?: string
 }
 
@@ -720,7 +832,7 @@ export type ActionLoopErrorInterface = Error & ActionLoopErrorData
 // ============================================================================
 
 /**
- * Procedural Graph interface - static graph of valid transitions.
+ * Procedural Graph interface - static graph of valid transitions. 
  *
  * Encodes every allowed action transition, serving as the single source
  * of truth for workflow compliance.
@@ -749,7 +861,7 @@ export interface ProceduralGraphInterface
 	getAllTransitions(): readonly Transition[]
 
 	/** Check if transition exists */
-	hasTransition(from: string, to:  string): boolean
+	hasTransition(from: string, to: string): boolean
 
 	/** Get transition by from/to */
 	getTransition(from: string, to: string): Transition | undefined
@@ -770,13 +882,16 @@ export interface ProceduralGraphInterface
 	isStartNode(id: string): boolean
 
 	/** Check if node is an end node (no outgoing transitions) */
-	isEndNode(id:  string): boolean
+	isEndNode(id: string): boolean
 
 	/** Get all start nodes */
 	getStartNodes(): readonly string[]
 
 	/** Get all end nodes */
 	getEndNodes(): readonly string[]
+
+	/** Get graph version */
+	getVersion(): GraphVersion | undefined
 
 	// ---- Validation Methods ----
 
@@ -793,7 +908,7 @@ export interface ProceduralGraphInterface
 }
 
 /**
- * Predictive Graph interface - dynamic weight overlay.
+ * Predictive Graph interface - dynamic weight overlay. 
  *
  * Overlays dynamic weights on Procedural Graph transitions,
  * learning from usage patterns to improve predictions.
@@ -804,7 +919,7 @@ export interface PredictiveGraphInterface
 	// ---- Accessor Methods ----
 
 	/** Get weight for a specific transition and actor */
-	getWeight(from: string, to: string, actor: Actor): number
+	getWeight(from: string, to: string, actor:  Actor): number
 
 	/** Get all weighted transitions from a node for an actor */
 	getWeights(nodeId: string, actor: Actor): readonly WeightedTransition[]
@@ -821,13 +936,27 @@ export interface PredictiveGraphInterface
 	/** Check if weight exists */
 	hasWeight(from: string, to: string, actor: Actor): boolean
 
+	/** Get total transition count across all weights */
+	getTransitionCount(): number
+
+	/** Check if warmup threshold has been met */
+	isWarmupComplete(): boolean
+
 	// ---- Mutator Methods ----
 
 	/** Increment transition weight (applies decay) */
-	updateWeight(from: string, to:  string, actor: Actor): void
+	updateWeight(from: string, to: string, actor: Actor): void
+
+	/** Update weight with engagement factor */
+	updateWeightWithEngagement(
+		from: string,
+		to: string,
+		actor:  Actor,
+		engagementScore: number
+	): void
 
 	/** Set explicit weight value */
-	setWeight(from:  string, to: string, actor:  Actor, weight: number): void
+	setWeight(from: string, to: string, actor: Actor, weight:  number): void
 
 	/** Apply decay to all weights */
 	applyDecay(): number
@@ -843,6 +972,14 @@ export interface PredictiveGraphInterface
 	/** Preload historical records */
 	preload(records: readonly PreloadRecord[]): void
 
+	// ---- Persistence Methods ----
+
+	/** Save weights to persistence adapter (requires persistence option) */
+	saveWeights(): Promise<void>
+
+	/** Load weights from persistence adapter (requires persistence option) */
+	loadWeights(): Promise<boolean>
+
 	// ---- Export/Import Methods ----
 
 	/** Export for persistence */
@@ -853,7 +990,7 @@ export interface PredictiveGraphInterface
 }
 
 /**
- * Workflow Engine interface - runtime engine for PPALS.
+ * Workflow Engine interface - runtime engine for PPALS. 
  *
  * Bridges static Procedural Graph rules and dynamic Predictive Graph
  * learning to power the observe-update-predict-recommend cycle.
@@ -864,15 +1001,15 @@ export interface WorkflowEngineInterface
 	// ---- Core Methods ----
 
 	/** Record a transition event */
-	recordTransition(from: string, to: string, context: TransitionContext): void
+	recordTransition(from: string, to:  string, context: TransitionContext): void
 
 	/** Record multiple transitions in batch */
 	recordTransitions(transitions: readonly BatchTransition[]): void
 
 	/** Predict next actions from current node */
-	predictNext(node: string, context: PredictionContext): readonly string[]
+	predictNext(node: string, context:  PredictionContext): readonly string[]
 
-	/** Get detailed prediction with weights */
+	/** Get detailed prediction with confidence scores */
 	predictNextDetailed(
 		node: string,
 		context: PredictionContext
@@ -881,7 +1018,7 @@ export interface WorkflowEngineInterface
 	// ---- Validation Methods ----
 
 	/** Validate a transition without recording */
-	isValidTransition(from: string, to: string): boolean
+	isValidTransition(from: string, to:  string): boolean
 
 	/** Get valid transitions from a node */
 	getValidTransitions(from: string): readonly Transition[]
@@ -892,25 +1029,33 @@ export interface WorkflowEngineInterface
 	startSession(actor: Actor, sessionId?:  string): SessionInfo
 
 	/** Get session by ID */
-	getSession(sessionId: string): SessionInfo | undefined
+	getSession(sessionId:  string): SessionInfo | undefined
 
 	/** Get active session for actor */
-	getActiveSession(actor: Actor): SessionInfo | undefined
+	getActiveSession(actor:  Actor): SessionInfo | undefined
 
 	/** Check if session exists */
 	hasSession(sessionId: string): boolean
 
 	/** End a session */
-	endSession(sessionId: string, reason: SessionEndReason): void
+	endSession(sessionId:  string, reason:  SessionEndReason): void
 
 	/** Resume an existing session */
-	resumeSession(sessionId: string, options: SessionResumeOptions): void
+	resumeSession(sessionId: string, options:  SessionResumeOptions): void
 
 	/** Get session action chain */
-	getSessionChain(actor: Actor, options?:  ChainOptions): ActionChain
+	getSessionChain(actor: Actor, options?: ChainOptions): ActionChain
 
 	/** Truncate session chain */
 	truncateChain(sessionId: string, strategy?:  TruncationStrategy): void
+
+	// ---- Event Methods (requires eventPersistence adapter) ----
+
+	/** Get events matching filter */
+	getEvents(filter: EventFilter): Promise<readonly TransitionEvent[]>
+
+	/** Get count of events matching filter */
+	getEventCount(filter?:  EventFilter): Promise<number>
 
 	// ---- Graph Access ----
 
@@ -919,6 +1064,9 @@ export interface WorkflowEngineInterface
 
 	/** Get underlying predictive graph */
 	getPredictiveGraph(): PredictiveGraphInterface
+
+	/** Get activity tracker (if configured) */
+	getActivityTracker(): ActivityTrackerInterface | undefined
 }
 
 /**
@@ -942,7 +1090,7 @@ export interface WorkflowBuilderInterface
 	removeNode(id: string): this
 
 	/** Update a node */
-	updateNode(id: string, updates: Partial<NodeInput>): this
+	updateNode(id:  string, updates:  Partial<NodeInput>): this
 
 	/** Add a transition */
 	addTransition(transition: TransitionInput): this
@@ -951,13 +1099,13 @@ export interface WorkflowBuilderInterface
 	addTransitions(transitions: readonly TransitionInput[]): this
 
 	/** Remove a transition */
-	removeTransition(from: string, to: string): this
+	removeTransition(from: string, to:  string): this
 
 	/** Update a transition */
 	updateTransition(
 		from: string,
 		to: string,
-		updates: Partial<TransitionInput>
+		updates:  Partial<TransitionInput>
 	): this
 
 	/** Add a procedure */
@@ -984,7 +1132,7 @@ export interface WorkflowBuilderInterface
 	hasNode(id: string): boolean
 
 	/** Check if transition exists */
-	hasTransition(from: string, to: string): boolean
+	hasTransition(from:  string, to: string): boolean
 
 	// ---- Validation Methods ----
 
@@ -1014,14 +1162,14 @@ export interface WorkflowBuilderInterface
 	fromJSON(json: string): this
 
 	/** Import from YAML string */
-	fromYAML(yaml:  string): this
+	fromYAML(yaml: string): this
 
 	/** Import from graph definition */
 	fromDefinition(definition: GraphDefinition): this
 }
 
 /**
- * Workflow Validator interface - static analysis.
+ * Workflow Validator interface - static analysis. 
  *
  * Performs comprehensive static checks on Procedural Graph
  * definitions to enforce structural and guard-logic correctness.
@@ -1082,7 +1230,7 @@ export interface WorkflowAnalyzerInterface
 	// ---- Loop Detection Methods ----
 
 	/** Find hot loops (high-frequency circuits) */
-	findHotLoops(options?:  LoopDetectionOptions): readonly LoopInfo[]
+	findHotLoops(options?: LoopDetectionOptions): readonly LoopInfo[]
 
 	/** Find infinite loops (walks exceeding configured length) */
 	findInfiniteLoops(options?: LoopDetectionOptions): readonly LoopInfo[]
@@ -1142,14 +1290,14 @@ export interface WorkflowAnalyzerInterface
 // ============================================================================
 
 /**
- * Create a Procedural Graph.
+ * Create a Procedural Graph. 
  *
  * @param options - Graph configuration with transitions and optional nodes/procedures
  * @returns Procedural graph interface
  *
  * @example
  * ```ts
- * import { createProceduralGraph } from '@actionloop/core'
+ * import { createProceduralGraph } from '@mikesaintsg/actionloop'
  *
  * const graph = createProceduralGraph({
  *   transitions: [
@@ -1165,38 +1313,46 @@ export type CreateProceduralGraph = (
 /**
  * Create a Predictive Graph overlay.
  *
- * @param procedural - The underlying procedural graph
- * @param options - Optional decay and preload configuration
+ * @param procedural - The underlying procedural graph (required first param)
+ * @param options - Optional decay, cold-start, and persistence configuration
  * @returns Predictive graph interface
  *
  * @example
  * ```ts
- * import { createPredictiveGraph } from '@actionloop/core'
+ * import { createPredictiveGraph } from '@mikesaintsg/actionloop'
  *
  * const predictive = createPredictiveGraph(procedural, {
  *   decayAlgorithm: 'ewma',
  *   decayFactor: 0.9,
+ *   coldStart: {
+ *     strategy: 'procedural-weight',
+ *     warmupThreshold: 100,
+ *   },
  * })
  * ```
  */
 export type CreatePredictiveGraph = (
-	procedural:  ProceduralGraphInterface,
+	procedural: ProceduralGraphInterface,
 	options?: PredictiveGraphOptions
 ) => PredictiveGraphInterface
 
 /**
- * Create a Workflow Engine.
+ * Create a Workflow Engine. 
  *
- * @param procedural - The static procedural graph
- * @param predictive - The dynamic predictive graph overlay
- * @param options - Optional engine configuration
+ * @param procedural - The static procedural graph (required first param)
+ * @param predictive - The dynamic predictive graph overlay (required second param)
+ * @param options - Optional engine configuration with opt-in adapters
  * @returns Workflow engine interface
  *
  * @example
  * ```ts
- * import { createWorkflowEngine } from '@actionloop/core'
+ * import { createWorkflowEngine, createActivityTracker } from '@mikesaintsg/actionloop'
+ *
+ * const activity = createActivityTracker({ idleThreshold: 30000 })
  *
  * const engine = createWorkflowEngine(procedural, predictive, {
+ *   activity,
+ *   validateTransitions: true,
  *   onTransition: (from, to, ctx) => console.log(`${from} -> ${to}`),
  * })
  * ```
@@ -1215,30 +1371,30 @@ export type CreateWorkflowEngine = (
  *
  * @example
  * ```ts
- * import { createWorkflowBuilder } from '@actionloop/core'
+ * import { createWorkflowBuilder } from '@mikesaintsg/actionloop'
  *
  * const builder = createWorkflowBuilder()
  * builder.addNode({ id: 'login' })
- * builder.addTransition({ from: 'login', to: 'dashboard', weight:  1, actor: 'user' })
+ * builder.addTransition({ from: 'login', to:  'dashboard', weight: 1, actor: 'user' })
  * const graph = builder.build()
  * ```
  */
 export type CreateWorkflowBuilder = (
-	options?:  WorkflowBuilderOptions
+	options?: WorkflowBuilderOptions
 ) => WorkflowBuilderInterface
 
 /**
- * Create a Workflow Validator.
+ * Create a Workflow Validator. 
  *
- * @param procedural - The procedural graph to validate
+ * @param procedural - The procedural graph to validate (required first param)
  * @param options - Optional validator configuration
  * @returns Workflow validator interface
  *
  * @example
  * ```ts
- * import { createWorkflowValidator } from '@actionloop/core'
+ * import { createWorkflowValidator } from '@mikesaintsg/actionloop'
  *
- * const validator = createWorkflowValidator(procedural)
+ * const validator = createWorkflowValidator(procedural, { strictMode: true })
  * const results = validator.runStaticChecks()
  * ```
  */
@@ -1248,16 +1404,16 @@ export type CreateWorkflowValidator = (
 ) => WorkflowValidatorInterface
 
 /**
- * Create a Workflow Analyzer.
+ * Create a Workflow Analyzer. 
  *
- * @param procedural - The procedural graph to analyze
- * @param predictive - The predictive graph with runtime weights
+ * @param procedural - The procedural graph to analyze (required first param)
+ * @param predictive - The predictive graph with runtime weights (required second param)
  * @param options - Optional analyzer configuration
  * @returns Workflow analyzer interface
  *
  * @example
  * ```ts
- * import { createWorkflowAnalyzer } from '@actionloop/core'
+ * import { createWorkflowAnalyzer } from '@mikesaintsg/actionloop'
  *
  * const analyzer = createWorkflowAnalyzer(procedural, predictive)
  * const loops = analyzer.findHotLoops()
@@ -1265,9 +1421,32 @@ export type CreateWorkflowValidator = (
  */
 export type CreateWorkflowAnalyzer = (
 	procedural: ProceduralGraphInterface,
-	predictive: PredictiveGraphInterface,
-	options?:  WorkflowAnalyzerOptions
+	predictive:  PredictiveGraphInterface,
+	options?: WorkflowAnalyzerOptions
 ) => WorkflowAnalyzerInterface
+
+/**
+ * Create an Activity Tracker. 
+ *
+ * @param config - Optional activity tracker configuration
+ * @returns Activity tracker interface
+ *
+ * @example
+ * ```ts
+ * import { createActivityTracker } from '@mikesaintsg/actionloop'
+ *
+ * const activity = createActivityTracker({
+ *   idleThreshold: 30000,
+ *   awayThreshold: 300000,
+ *   onEngagementChange: (state, nodeId) => {
+ *     console.log(`Engagement: ${state} on ${nodeId}`)
+ *   },
+ * })
+ * ```
+ */
+export type CreateActivityTracker = (
+	config?: ActivityTrackerConfig
+) => ActivityTrackerInterface
 
 // ============================================================================
 // Utility Function Types
@@ -1275,6 +1454,9 @@ export type CreateWorkflowAnalyzer = (
 
 /** Check if ActionLoop is supported in current environment */
 export type IsActionLoopSupported = () => boolean
+
+/** Check if activity tracking is supported in current environment */
+export type IsActivityTrackingSupported = () => boolean
 
 /** Check if error is an ActionLoop error */
 export type IsActionLoopError = (error: unknown) => error is ActionLoopErrorInterface
@@ -1287,11 +1469,30 @@ export type CreateActionLoopError = (
 ) => ActionLoopErrorInterface
 
 // ============================================================================
+// Type Guards
+// ============================================================================
+
+/** Check if value is a Node */
+export type IsNode = (value: unknown) => value is Node
+
+/** Check if value is a Transition */
+export type IsTransition = (value:  unknown) => value is Transition
+
+/** Check if value is a Procedure */
+export type IsProcedure = (value: unknown) => value is Procedure
+
+/** Check if value is a SessionInfo */
+export type IsSessionInfo = (value: unknown) => value is SessionInfo
+
+/** Check if value is a DwellRecord */
+export type IsDwellRecord = (value: unknown) => value is DwellRecord
+
+// ============================================================================
 // Internal Implementation Types
 // ============================================================================
 
 /**
- * Weight entry for predictive graph weight storage.
+ * Weight entry for predictive graph weight storage. 
  * @internal Used by PredictiveGraph implementation
  */
 export interface WeightEntry {
@@ -1308,4 +1509,17 @@ export interface SessionEntry {
 	info: SessionInfo
 	readonly events: ActionEvent[]
 	active: boolean
+}
+
+/**
+ * Activity state for internal tracking.
+ * @internal Used by ActivityTracker implementation
+ */
+export interface ActivityState {
+	currentNodeId: string | undefined
+	enterTime: number
+	activeTime: number
+	idleTime: number
+	lastActivityTime: number
+	engagement: EngagementState
 }
