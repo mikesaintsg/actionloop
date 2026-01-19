@@ -15,7 +15,7 @@ import type {
 	ProceduralGraphInterface,
 	Unsubscribe,
 } from '../../types.js'
-import { createTransitionKey } from '../../helpers.js'
+import { createTransitionKey, isValidGuardSyntax } from '../../helpers.js'
 
 // ============================================================================
 // Implementation
@@ -207,7 +207,7 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 			const key = createTransitionKey(transition.from, transition.to)
 
 			// Basic syntax validation (no actual evaluation)
-			const valid = this.#isValidGuardSyntax(guard)
+			const valid = isValidGuardSyntax(guard)
 
 			if (valid) {
 				results.push({
@@ -226,33 +226,6 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 		}
 
 		return results
-	}
-
-	#isValidGuardSyntax(guard: string): boolean {
-		// Basic syntax checks - ensure balanced parentheses and quotes
-		let parenCount = 0
-		let inString = false
-		let stringChar = ''
-
-		for (const char of guard) {
-			if (inString) {
-				if (char === stringChar) {
-					inString = false
-				}
-			} else {
-				if (char === '"' || char === "'") {
-					inString = true
-					stringChar = char
-				} else if (char === '(') {
-					parenCount++
-				} else if (char === ')') {
-					parenCount--
-					if (parenCount < 0) return false
-				}
-			}
-		}
-
-		return parenCount === 0 && !inString
 	}
 
 	validateProcedures(): readonly ValidationResult[] {

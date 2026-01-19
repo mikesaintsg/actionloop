@@ -23,8 +23,8 @@
 Phase: 4 of 4 (Polish)
 Active Deliverable: 4.1 Documentation
 Checklist Progress: 0/16 items complete
-Last Action: Extracted types, helpers, constants to centralized files
-Next Action: Begin Phase 4 - Documentation and polish
+Last Action: Extracted internal helpers and added comprehensive edge case tests
+Next Action: Begin Phase 4 deliverables - documentation and showcase
 Blockers: None
 ```
 
@@ -204,6 +204,34 @@ How we know the project is complete:
 ## Session Log
 
 > **Purpose:** Track work across multiple sessions. Append new entries at the top.
+
+### 2026-01-19 Session 5
+
+**Started:** Internal function extraction and comprehensive testing
+**Completed:**
+- Extracted `isValidGuardSyntax` from validator.ts to helpers.ts
+- Extracted `parseYAMLValue` from builder.ts to helpers.ts
+- Added comprehensive edge case tests for all helper functions
+  - Tests for isActor (10 tests), isNode (11 tests), isTransition (14 tests)
+  - Tests for createTransitionKey, parseTransitionKey, createWeightKey
+  - Tests for deepFreeze including circular references
+  - Tests for generateId uniqueness
+  - Tests for now/elapsed time utilities
+  - Tests for isValidGuardSyntax (17 tests)
+  - Tests for parseYAMLValue (15 tests)
+- Updated implementation files to use centralized helper imports
+- Verified prior phase files are all marked complete
+
+**Quality Gates:**
+- `npm run check` ✅ passes
+- `npm run format` ✅ passes
+- `npm run build` ✅ passes
+- `npm test` ✅ 231 tests pass (was 159)
+
+**Blockers Discovered:**
+- None
+
+**Ended:** Ready for Phase 4 deliverables
 
 ### 2026-01-19 Session 4
 

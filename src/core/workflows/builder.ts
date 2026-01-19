@@ -24,7 +24,7 @@ import type {
 } from '../../types.js'
 import { createProceduralGraph } from '../graphs/procedural.js'
 import { ActionLoopError } from '../../errors.js'
-import { createTransitionKey, deepFreeze } from '../../helpers.js'
+import { createTransitionKey, deepFreeze, parseYAMLValue } from '../../helpers.js'
 
 // ============================================================================
 // Implementation
@@ -621,10 +621,10 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 						const key = content.slice(0, splitIndex).trim()
 						const value = content.slice(splitIndex + 1).trim()
 						currentItem = {}
-						currentItem[key] = this.#parseYAMLValue(value)
+						currentItem[key] = parseYAMLValue(value)
 					} else {
 						// It's an array item for actions
-						currentActions.push(this.#parseYAMLValue(content) as string)
+						currentActions.push(parseYAMLValue(content) as string)
 					}
 				} else if (trimmed.includes(':') && currentItem) {
 					const colonIndex = trimmed.indexOf(':')
@@ -634,7 +634,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 					if (key === 'actions') {
 						// Skip, actions are parsed as array items
 					} else {
-						currentItem[key] = this.#parseYAMLValue(value)
+						currentItem[key] = parseYAMLValue(value)
 					}
 				}
 			}
@@ -711,27 +711,6 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 			id,
 			actions,
 		})
-	}
-
-	#parseYAMLValue(value: string): string | number | boolean {
-		// Remove quotes
-		if (
-			(value.startsWith('"') && value.endsWith('"')) ||
-			(value.startsWith("'") && value.endsWith("'"))
-		) {
-			return value.slice(1, -1)
-		}
-
-		// Parse numbers
-		if (/^-?\d+(\.\d+)?$/.test(value)) {
-			return parseFloat(value)
-		}
-
-		// Parse booleans
-		if (value === 'true') return true
-		if (value === 'false') return false
-
-		return value
 	}
 
 	fromDefinition(definition: GraphDefinition): this {

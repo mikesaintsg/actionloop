@@ -225,3 +225,72 @@ export function now(): number {
 export function elapsed(since: number): number {
 	return Date.now() - since
 }
+
+// ============================================================================
+// Guard Validation
+// ============================================================================
+
+/**
+ * Validate guard expression syntax.
+ * Checks for balanced parentheses and properly terminated strings.
+ *
+ * @param guard - Guard expression string to validate
+ * @returns True if syntax is valid (balanced parens and quotes)
+ */
+export function isValidGuardSyntax(guard: string): boolean {
+	let parenCount = 0
+	let inString = false
+	let stringChar = ''
+
+	for (const char of guard) {
+		if (inString) {
+			if (char === stringChar) {
+				inString = false
+			}
+		} else {
+			if (char === '"' || char === "'") {
+				inString = true
+				stringChar = char
+			} else if (char === '(') {
+				parenCount++
+			} else if (char === ')') {
+				parenCount--
+				if (parenCount < 0) return false
+			}
+		}
+	}
+
+	return parenCount === 0 && !inString
+}
+
+// ============================================================================
+// YAML Parsing
+// ============================================================================
+
+/**
+ * Parse a YAML value string into the appropriate JavaScript type.
+ * Handles quoted strings, numbers, and booleans.
+ *
+ * @param value - YAML value string
+ * @returns Parsed value as string, number, or boolean
+ */
+export function parseYAMLValue(value: string): string | number | boolean {
+	// Remove quotes
+	if (
+		(value.startsWith('"') && value.endsWith('"')) ||
+		(value.startsWith("'") && value.endsWith("'"))
+	) {
+		return value.slice(1, -1)
+	}
+
+	// Parse numbers
+	if (/^-?\d+(\.\d+)?$/.test(value)) {
+		return parseFloat(value)
+	}
+
+	// Parse booleans
+	if (value === 'true') return true
+	if (value === 'false') return false
+
+	return value
+}
