@@ -1,5 +1,7 @@
 # ActionLoop
 
+> **Version 1.0.0** — Complete implementation with 231 tests passing
+
 ## 1. Executive Summary
 
 ActionLoop is a **Predictive Procedural Action Loop System (PPALS)** that unites deterministic business procedures with adaptive predictions to guide users through complex, multistep workflows. The framework combines static rule enforcement with dynamic weight learning to deliver real-time, context-aware recommendations without violating business constraints.

@@ -2,6 +2,8 @@
 
 > **Predictive Procedural Action Loop System (PPALS) — Combine deterministic workflow rules with adaptive, data-driven predictions to guide users through complex multi-step workflows.**
 
+**Version:** 1.0.0 | **Tests:** 231 passing | **Bundle:** Zero dependencies
+
 ---
 
 ## Table of Contents
