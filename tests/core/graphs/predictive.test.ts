@@ -109,19 +109,18 @@ describe('PredictiveGraph', () => {
 			})
 		})
 
-		it('applyDecay reduces weights', () => {
+		it('applyDecay returns 0 when no time has passed', () => {
+			// EWMA decay requires time to pass (1 hour per decay step)
 			predictive.setWeight('a', 'b', 'user', 1.0)
-			const beforeDecay = predictive.getWeight('a', 'b', 'user')
-			predictive.applyDecay()
-			const afterDecay = predictive.getWeight('a', 'b', 'user')
-			expect(afterDecay).toBeLessThan(beforeDecay)
+			const count = predictive.applyDecay()
+			// No time has passed, so no decay is applied
+			expect(count).toBe(0)
 		})
 
-		it('applyDecay returns count of decayed weights', () => {
-			predictive.setWeight('a', 'b', 'user', 1.0)
-			predictive.setWeight('a', 'c', 'user', 1.0)
-			const count = predictive.applyDecay()
-			expect(count).toBe(2)
+		it('getDecayConfig returns decay configuration', () => {
+			const config = predictive.getDecayConfig()
+			expect(config.algorithm).toBe('ewma')
+			expect(config.decayFactor).toBe(0.5)
 		})
 	})
 

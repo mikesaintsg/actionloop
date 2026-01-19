@@ -284,9 +284,9 @@ describe('ProceduralGraph', () => {
 				validateOnCreate: false,
 			})
 
-			let called = false
+			let _called = false
 			const unsubscribe = graph.onValidation(() => {
-				called = true
+				_called = true
 			})
 
 			// Trigger validation
