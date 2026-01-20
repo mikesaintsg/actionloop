@@ -7,15 +7,17 @@
 import type {
 	Actor,
 	DecayConfig,
+	Unsubscribe,
+	ExportedPredictiveGraph,
+	ExportedWeight,
+} from '@mikesaintsg/core'
+import type {
 	WeightedTransition,
 	PreloadRecord,
 	PredictiveGraphStats,
-	ExportedPredictiveGraph,
-	ExportedWeight,
 	PredictiveGraphInterface,
 	PredictiveGraphOptions,
 	ProceduralGraphInterface,
-	Unsubscribe,
 	WeightEntry,
 } from '../../types.js'
 import { ActionLoopError } from '../../errors.js'
@@ -37,6 +39,8 @@ class PredictiveGraph implements PredictiveGraphInterface {
 	readonly #modelId: string
 	readonly #decayConfig: DecayConfig
 	readonly #minWeight: number
+	readonly #warmupThreshold: number
+	readonly #persistence: import('@mikesaintsg/core').WeightPersistenceAdapterInterface | undefined
 
 	readonly #weightUpdateListeners: Set<
 		(from: string, to:  string, actor: Actor, weight: number) => void
@@ -56,6 +60,8 @@ class PredictiveGraph implements PredictiveGraphInterface {
 		this.#minWeight = options.minWeight ?? DEFAULT_MIN_WEIGHT
 		this.#totalUpdates = 0
 		this.#lastUpdateTime = now()
+		this.#warmupThreshold = options.coldStart?.warmupThreshold ?? 100
+		this.#persistence = options.persistence
 
 		this.#decayConfig = deepFreeze(
 			Object.assign(
@@ -79,9 +85,9 @@ class PredictiveGraph implements PredictiveGraphInterface {
 			this.#decayListeners.add(options.onDecay)
 		}
 
-		// Preload historical records
-		if (options.preloadRecords) {
-			this.preload(options.preloadRecords)
+		// Preload from cold-start configuration
+		if (options.coldStart?.preloadRecords) {
+			this.preload(options.coldStart.preloadRecords)
 		}
 	}
 
@@ -177,12 +183,21 @@ class PredictiveGraph implements PredictiveGraphInterface {
 			totalWeightUpdates: this.#totalUpdates,
 			lastUpdateTime:  this.#lastUpdateTime,
 			modelId: this.#modelId,
+			warmupComplete: this.isWarmupComplete(),
 		})
 	}
 
 	hasWeight(from: string, to:  string, actor: Actor): boolean {
 		const key = createWeightKey(from, to, actor)
 		return this.#weights.has(key)
+	}
+
+	getTransitionCount(): number {
+		return this.#totalUpdates
+	}
+
+	isWarmupComplete(): boolean {
+		return this.#totalUpdates >= this.#warmupThreshold
 	}
 
 	// ---- Mutator Methods ----
@@ -218,6 +233,51 @@ class PredictiveGraph implements PredictiveGraphInterface {
 
 		this.#totalUpdates++
 		this. #lastUpdateTime = currentTime
+
+		// Emit weight update
+		for (const listener of this.#weightUpdateListeners) {
+			listener(from, to, actor, newWeight)
+		}
+	}
+
+	updateWeightWithEngagement(
+		from: string,
+		to: string,
+		actor: Actor,
+		engagementScore: number,
+	): void {
+		// Validate transition exists
+		if (!this.#procedural.hasTransition(from, to)) {
+			throw new ActionLoopError(
+				'INVALID_TRANSITION',
+				`Cannot update weight for invalid transition: ${from} -> ${to}`,
+				{ transitionKey: `${from}::${to}` },
+			)
+		}
+
+		const key = createWeightKey(from, to, actor)
+		const currentTime = now()
+		const existing = this.#weights.get(key)
+
+		// Apply engagement score as a multiplier (0.0-1.0 scale)
+		const engagementMultiplier = Math.max(0.1, Math.min(1.0, engagementScore))
+		let newWeight: number
+
+		if (existing) {
+			const decayed = this.#calculateDecay(existing, currentTime)
+			newWeight = decayed + engagementMultiplier
+		} else {
+			newWeight = engagementMultiplier
+		}
+
+		this.#weights.set(key, {
+			weight: newWeight,
+			lastUpdated: currentTime,
+			updateCount: (existing?.updateCount ?? 0) + 1,
+		})
+
+		this.#totalUpdates++
+		this.#lastUpdateTime = currentTime
 
 		// Emit weight update
 		for (const listener of this.#weightUpdateListeners) {
@@ -368,6 +428,8 @@ class PredictiveGraph implements PredictiveGraphInterface {
 			modelId: this.#modelId,
 			weights,
 			decayConfig: this.#decayConfig,
+			transitionCount: this.#totalUpdates,
+			warmupThreshold: this.#warmupThreshold,
 		})
 	}
 
@@ -390,6 +452,39 @@ class PredictiveGraph implements PredictiveGraphInterface {
 				updateCount: weight.updateCount,
 			})
 		}
+	}
+
+	// ---- Persistence Methods ----
+
+	async saveWeights(): Promise<void> {
+		if (!this.#persistence) {
+			throw new ActionLoopError(
+				'PERSISTENCE_FAILED',
+				'Cannot save weights: no persistence adapter configured',
+			)
+		}
+
+		const exported = this.export()
+		await this.#persistence.save(exported)
+	}
+
+	async loadWeights(): Promise<boolean> {
+		if (!this.#persistence) {
+			return false
+		}
+
+		const isAvailable = await this.#persistence.isAvailable()
+		if (!isAvailable) {
+			return false
+		}
+
+		const loaded = await this.#persistence.load(this.#modelId)
+		if (!loaded) {
+			return false
+		}
+
+		this.import(loaded)
+		return true
 	}
 
 	// ---- Lifecycle Methods ----

@@ -5,6 +5,9 @@
  */
 
 import type {
+	Unsubscribe,
+} from '@mikesaintsg/core'
+import type {
 	ValidationResult,
 	ValidationSeverity,
 	ValidationRule,
@@ -13,7 +16,6 @@ import type {
 	WorkflowValidatorInterface,
 	WorkflowValidatorOptions,
 	ProceduralGraphInterface,
-	Unsubscribe,
 } from '../../types.js'
 import { createTransitionKey, isValidGuardSyntax } from '../../helpers.js'
 

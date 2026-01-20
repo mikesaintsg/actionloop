@@ -11,6 +11,8 @@ import type {
 	CreateWorkflowBuilder,
 	CreateWorkflowValidator,
 	CreateWorkflowAnalyzer,
+	CreateActivityTracker,
+	CreateActionLoopContextFormatter,
 } from './types.js'
 
 // ============================================================================
@@ -26,6 +28,8 @@ export { createWorkflowEngine } from './core/workflows/engine.js'
 export { createWorkflowBuilder } from './core/workflows/builder.js'
 export { createWorkflowValidator } from './core/workflows/validator.js'
 export { createWorkflowAnalyzer } from './core/workflows/analyzer.js'
+export { createActivityTracker } from './core/ActivityTracker.js'
+export { createActionLoopContextFormatter } from './core/ContextFormatter.js'
 
 // ============================================================================
 // Type Exports (for documentation)
@@ -38,4 +42,6 @@ export type {
 	CreateWorkflowBuilder,
 	CreateWorkflowValidator,
 	CreateWorkflowAnalyzer,
+	CreateActivityTracker,
+	CreateActionLoopContextFormatter,
 }

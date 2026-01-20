@@ -52,6 +52,33 @@ export const DEFAULT_DELAY_THRESHOLD_MS = 5000
 export const DEFAULT_HOT_LOOP_THRESHOLD = 5
 
 // ============================================================================
+// Activity Tracker Constants
+// ============================================================================
+
+/** Default idle threshold in milliseconds (30 seconds) */
+export const DEFAULT_IDLE_THRESHOLD_MS = 30000
+
+/** Default away threshold in milliseconds (5 minutes) */
+export const DEFAULT_AWAY_THRESHOLD_MS = 300000
+
+/** Engagement score weights for calculating overall score */
+export const ENGAGEMENT_SCORE_WEIGHTS = {
+	active: 1.0,
+	idle: 0.3,
+	away: 0.0,
+} as const
+
+// ============================================================================
+// Context Formatter Constants
+// ============================================================================
+
+/** Default maximum recent events to include in context */
+export const DEFAULT_MAX_RECENT_EVENTS = 10
+
+/** Default top predictions to include in formatted context */
+export const DEFAULT_TOP_PREDICTIONS = 5
+
+// ============================================================================
 // Export Version
 // ============================================================================
 

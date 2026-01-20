@@ -6,6 +6,13 @@
 
 import type {
 	Actor,
+	Unsubscribe,
+	ActivityTrackerInterface,
+	EventStorePersistenceAdapterInterface,
+	TransitionEvent,
+	EventFilter,
+} from '@mikesaintsg/core'
+import type {
 	Transition,
 	TransitionContext,
 	PredictionContext,
@@ -20,6 +27,7 @@ import type {
 	TruncationStrategy,
 	DetailedPrediction,
 	PredictionResult,
+	ConfidenceFactors,
 	TransitionCallback,
 	PredictionCallback,
 	SessionCallback,
@@ -29,7 +37,6 @@ import type {
 	WorkflowEngineOptions,
 	ProceduralGraphInterface,
 	PredictiveGraphInterface,
-	Unsubscribe,
 	ActionLoopErrorInterface,
 	SessionEntry,
 } from '../../types.js'
@@ -53,6 +60,8 @@ class WorkflowEngine implements WorkflowEngineInterface {
 	readonly #validateTransitions: boolean
 	readonly #trackSessions: boolean
 	readonly #sessionTimeoutMs: number
+	readonly #activity: ActivityTrackerInterface | undefined
+	readonly #eventPersistence: EventStorePersistenceAdapterInterface | undefined
 
 	readonly #transitionListeners: Set<TransitionCallback>
 	readonly #predictionListeners: Set<PredictionCallback>
@@ -72,6 +81,8 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		this.#validateTransitions = _options.validateTransitions !== false
 		this.#trackSessions = _options.trackSessions !== false
 		this.#sessionTimeoutMs = _options.sessionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS
+		this.#activity = _options.activity
+		this.#eventPersistence = _options.eventPersistence
 
 		this.#transitionListeners = new Set()
 		this.#predictionListeners = new Set()
@@ -192,22 +203,37 @@ class WorkflowEngine implements WorkflowEngineInterface {
 	): DetailedPrediction {
 		const count = context.count ?? DEFAULT_PREDICTION_COUNT
 		const weighted = this.#predictive.getWeights(node, context.actor)
+		const warmupComplete = this.#predictive.isWarmupComplete()
+		const transitionCount = this.#predictive.getTransitionCount()
 
 		const predictions: PredictionResult[] = weighted
 			.slice(0, count)
-			.map((w) => ({
-				nodeId: w.to,
-				score: w.weight,
-				baseWeight: w.baseWeight,
-				predictiveWeight: w.predictiveWeight,
-				confidence: w.weight > 0 ? w.predictiveWeight / w.weight : 0,
-			}))
+			.map((w) => {
+				const confidence = w.weight > 0 ? Math.min(1, w.predictiveWeight / w.weight) : 0
+				const factors: ConfidenceFactors = {
+					frequency: Math.min(1, w.predictiveWeight / 10),
+					recency: 0.5, // Default value - could be enhanced with recency tracking
+					engagement: 0.5, // Default value - could be enhanced with engagement data
+					sampleSize: Math.min(1, transitionCount / 100),
+				}
+
+				return {
+					nodeId: w.to,
+					score: w.weight,
+					baseWeight: w.baseWeight,
+					predictiveWeight: w.predictiveWeight,
+					confidence,
+					factors,
+				}
+			})
 
 		return {
 			predictions,
 			currentNode: node,
 			context,
 			computedAt: now(),
+			warmupComplete,
+			transitionCount,
 		}
 	}
 
@@ -486,6 +512,26 @@ class WorkflowEngine implements WorkflowEngineInterface {
 
 	getPredictiveGraph(): PredictiveGraphInterface {
 		return this.#predictive
+	}
+
+	getActivityTracker(): ActivityTrackerInterface | undefined {
+		return this.#activity
+	}
+
+	// ---- Event Methods (requires eventPersistence adapter) ----
+
+	async getEvents(filter: EventFilter): Promise<readonly TransitionEvent[]> {
+		if (!this.#eventPersistence) {
+			return []
+		}
+		return this.#eventPersistence.load(filter)
+	}
+
+	async getEventCount(filter?: EventFilter): Promise<number> {
+		if (!this.#eventPersistence) {
+			return 0
+		}
+		return this.#eventPersistence.getCount(filter)
 	}
 
 	// ---- Lifecycle Methods ----
