@@ -27,6 +27,8 @@ import {
 	DEFAULT_MIN_WEIGHT,
 	DEFAULT_HALF_LIFE_MS,
 	EXPORT_VERSION,
+	MIN_ENGAGEMENT_MULTIPLIER,
+	MAX_ENGAGEMENT_MULTIPLIER,
 } from '../../constants.js'
 
 // ============================================================================
@@ -260,7 +262,7 @@ class PredictiveGraph implements PredictiveGraphInterface {
 		const existing = this.#weights.get(key)
 
 		// Apply engagement score as a multiplier (0.0-1.0 scale)
-		const engagementMultiplier = Math.max(0.1, Math.min(1.0, engagementScore))
+		const engagementMultiplier = Math.max(MIN_ENGAGEMENT_MULTIPLIER, Math.min(MAX_ENGAGEMENT_MULTIPLIER, engagementScore))
 		let newWeight: number
 
 		if (existing) {

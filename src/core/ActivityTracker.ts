@@ -423,16 +423,5 @@ export function createActivityTracker(
 	return new ActivityTracker(options)
 }
 
-/**
- * Check if activity tracking is supported in current environment.
- *
- * @returns true if browser environment with required APIs
- */
-export function isActivityTrackingSupported(): boolean {
-	return (
-		typeof document !== 'undefined' &&
-		typeof document.visibilityState !== 'undefined' &&
-		typeof window !== 'undefined' &&
-		typeof window.addEventListener === 'function'
-	)
-}
+// Re-export isActivityTrackingSupported from helpers for convenience
+export { isActivityTrackingSupported } from '../helpers.js'

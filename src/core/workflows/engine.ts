@@ -46,6 +46,8 @@ import {
 	DEFAULT_SESSION_TIMEOUT_MS,
 	DEFAULT_PREDICTION_COUNT,
 	DEFAULT_MAX_EVENTS,
+	FREQUENCY_SCALE_FACTOR,
+	SAMPLE_SIZE_SCALE_FACTOR,
 } from '../../constants.js'
 
 // ============================================================================
@@ -211,10 +213,10 @@ class WorkflowEngine implements WorkflowEngineInterface {
 			.map((w) => {
 				const confidence = w.weight > 0 ? Math.min(1, w.predictiveWeight / w.weight) : 0
 				const factors: ConfidenceFactors = {
-					frequency: Math.min(1, w.predictiveWeight / 10),
+					frequency: Math.min(1, w.predictiveWeight / FREQUENCY_SCALE_FACTOR),
 					recency: 0.5, // Default value - could be enhanced with recency tracking
 					engagement: 0.5, // Default value - could be enhanced with engagement data
-					sampleSize: Math.min(1, transitionCount / 100),
+					sampleSize: Math.min(1, transitionCount / SAMPLE_SIZE_SCALE_FACTOR),
 				}
 
 				return {

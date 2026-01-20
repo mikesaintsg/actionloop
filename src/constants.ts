@@ -78,6 +78,25 @@ export const DEFAULT_MAX_RECENT_EVENTS = 10
 /** Default top predictions to include in formatted context */
 export const DEFAULT_TOP_PREDICTIONS = 5
 
+/** Bottleneck threshold for pattern analysis (30 seconds) */
+export const BOTTLENECK_DWELL_THRESHOLD_MS = 30000
+
+// ============================================================================
+// Predictive Graph Constants
+// ============================================================================
+
+/** Minimum engagement multiplier for weight updates */
+export const MIN_ENGAGEMENT_MULTIPLIER = 0.1
+
+/** Maximum engagement multiplier for weight updates */
+export const MAX_ENGAGEMENT_MULTIPLIER = 1.0
+
+/** Frequency scale factor for confidence calculation */
+export const FREQUENCY_SCALE_FACTOR = 10
+
+/** Sample size scale factor for confidence calculation */
+export const SAMPLE_SIZE_SCALE_FACTOR = 100
+
 // ============================================================================
 // Export Version
 // ============================================================================

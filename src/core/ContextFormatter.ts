@@ -20,6 +20,7 @@ import type {
 import {
 	DEFAULT_MAX_RECENT_EVENTS,
 	DEFAULT_TOP_PREDICTIONS,
+	BOTTLENECK_DWELL_THRESHOLD_MS,
 } from '../constants.js'
 
 // ============================================================================
@@ -235,8 +236,7 @@ function extractPatterns(events: readonly TransitionEvent[]): PatternInsights {
 	const bottlenecks: string[] = []
 	for (const [nodeId, dwells] of nodeDwellTimes) {
 		const avgDwell = dwells.reduce((a, b) => a + b, 0) / dwells.length
-		// Consider it a bottleneck if avg dwell > 30 seconds
-		if (avgDwell > 30000) {
+		if (avgDwell > BOTTLENECK_DWELL_THRESHOLD_MS) {
 			bottlenecks.push(nodeId)
 		}
 	}
