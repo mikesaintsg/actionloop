@@ -280,7 +280,7 @@ describe('ActionLoopContextFormatter', () => {
 
 			const json = formatter.toJSON(context)
 
-			expect(() => JSON.parse(json)).not.toThrow()
+			expect(() => { JSON.parse(json) }).not.toThrow()
 		})
 	})
 

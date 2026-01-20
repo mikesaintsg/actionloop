@@ -8,7 +8,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
 	createActivityTracker,
 	isActivityTrackingSupported,
-	type CreateActivityTracker,
 } from '@mikesaintsg/actionloop'
 import type { ActivityTrackerInterface } from '@mikesaintsg/core'
 

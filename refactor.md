@@ -632,13 +632,13 @@ function extractPatterns(events: readonly TransitionEvent[]): PatternInsights {
 - [x] Add `ActionLoopLLMContext` types for LLM integration
 - [x] Add `ActionLoopContextFormatterInterface` for context formatting
 - [x] Re-export `Actor` from core for convenience
-- [ ] Implement `createActivityTracker`
-- [ ] Implement `isActivityTrackingSupported`
-- [ ] Implement `createActionLoopContextFormatter`
-- [ ] Add confidence scoring to `predictNextDetailed`
-- [ ] Add warmup detection
-- [ ] Add `GraphVersion` support
-- [ ] Update tests for new functionality
+- [x] Implement `createActivityTracker`
+- [x] Implement `isActivityTrackingSupported`
+- [x] Implement `createActionLoopContextFormatter`
+- [x] Add confidence scoring to `predictNextDetailed`
+- [x] Add warmup detection
+- [x] Add `GraphVersion` support
+- [x] Update tests for new functionality
 
 ---
 
