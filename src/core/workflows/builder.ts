@@ -6,6 +6,9 @@
 
 import type {
 	Actor,
+	Unsubscribe,
+} from '@mikesaintsg/core'
+import type {
 	Node,
 	NodeInput,
 	NodeType,
@@ -20,7 +23,6 @@ import type {
 	WorkflowBuilderInterface,
 	WorkflowBuilderOptions,
 	ProceduralGraphInterface,
-	Unsubscribe,
 } from '../../types.js'
 import { createProceduralGraph } from '../graphs/procedural.js'
 import { ActionLoopError } from '../../errors.js'

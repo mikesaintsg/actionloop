@@ -5,6 +5,10 @@
  */
 
 import type {
+	Actor,
+	Unsubscribe,
+} from '@mikesaintsg/core'
+import type {
 	Node,
 	NodeInput,
 	Transition,
@@ -12,13 +16,12 @@ import type {
 	Procedure,
 	ProcedureInput,
 	GraphStats,
+	GraphVersion,
 	ValidationResult,
 	ValidationSeverity,
 	ExportedProceduralGraph,
 	ProceduralGraphInterface,
 	ProceduralGraphOptions,
-	Unsubscribe,
-	Actor,
 } from '../../types.js'
 import { ActionLoopError } from '../../errors.js'
 import { createTransitionKey, deepFreeze, now } from '../../helpers.js'
@@ -37,6 +40,7 @@ class ProceduralGraph implements ProceduralGraphInterface {
 	readonly #validationListeners: Set<
 		(results: readonly ValidationResult[]) => void
 	>
+	readonly #version: GraphVersion | undefined
 
 	constructor(options: ProceduralGraphOptions) {
 		this. #nodes = new Map()
@@ -45,6 +49,7 @@ class ProceduralGraph implements ProceduralGraphInterface {
 		this.#incoming = new Map()
 		this.#procedures = new Map()
 		this.#validationListeners = new Set()
+		this.#version = options.version
 
 		// Wire up hook subscriptions
 		if (options.onValidation) {
@@ -266,6 +271,10 @@ class ProceduralGraph implements ProceduralGraphInterface {
 			}
 		}
 		return result
+	}
+
+	getVersion(): GraphVersion | undefined {
+		return this.#version
 	}
 
 	// ---- Validation Methods ----

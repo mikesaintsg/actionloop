@@ -5,6 +5,9 @@
  */
 
 import type {
+	Unsubscribe,
+} from '@mikesaintsg/core'
+import type {
 	LoopInfo,
 	LoopType,
 	LoopDetectionOptions,
@@ -24,7 +27,6 @@ import type {
 	WorkflowAnalyzerOptions,
 	ProceduralGraphInterface,
 	PredictiveGraphInterface,
-	Unsubscribe,
 } from '../../types.js'
 import {
 	DEFAULT_HOT_LOOP_THRESHOLD,

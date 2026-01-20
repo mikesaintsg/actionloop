@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@mikesaintsg/actionloop.svg)](https://www.npmjs.com/package/@mikesaintsg/actionloop)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@mikesaintsg/actionloop)](https://bundlephobia.com/package/@mikesaintsg/actionloop)
 [![license](https://img.shields.io/npm/l/@mikesaintsg/actionloop.svg)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-231%20passing-brightgreen)](./tests)
+[![tests](https://img.shields.io/badge/tests-265%20passing-brightgreen)](./tests)
 
 ---
 
@@ -106,6 +106,8 @@ engine.destroy()
 | `createWorkflowBuilder(options?)`                          | Create builder for programmatic graph construction  |
 | `createWorkflowValidator(procedural, options?)`            | Create validator for static analysis                |
 | `createWorkflowAnalyzer(procedural, predictive, options?)` | Create analyzer for pattern detection               |
+| `createActivityTracker(options?)`                          | Create activity tracker for engagement-aware dwell time tracking |
+| `createActionLoopContextFormatter(options?)`               | Create context formatter for LLM integration        |
 
 ### WorkflowEngine Interface
 
@@ -117,6 +119,7 @@ engine.destroy()
 | `startSession(actor, sessionId?)`     | Start a new session                      |
 | `endSession(sessionId, reason)`       | End a session                            |
 | `onTransition(callback)`              | Subscribe to transitions                 |
+| `getActivityTracker()`                | Get the activity tracker (if configured) |
 | `destroy()`                           | Cleanup resources                        |
 
 ---
@@ -194,6 +197,44 @@ const opportunities = analyzer.findAutomationOpportunities({
 	minRepetitions: 5,
 	confidenceThreshold: 0.7,
 })
+```
+
+### Activity Tracking
+
+```ts
+import { createActivityTracker } from '@mikesaintsg/actionloop'
+
+const activity = createActivityTracker({
+	idleThreshold: 30000, // 30 seconds
+	awayThreshold: 300000, // 5 minutes
+	onEngagementChange: (state, nodeId) => {
+		console.log(`User is ${state} on ${nodeId}`)
+	},
+})
+
+// Use with workflow engine
+const engine = createWorkflowEngine(procedural, predictive, {
+	activity,
+})
+```
+
+### LLM Context Formatting
+
+```ts
+import { createActionLoopContextFormatter } from '@mikesaintsg/actionloop'
+
+const formatter = createActionLoopContextFormatter({
+	maxRecentEvents: 10,
+	includePatterns: true,
+	getNodeLabel: (id) => graph.getNode(id)?.label ?? id,
+})
+
+const predictions = engine.predictNextDetailed(currentNode, context)
+const events = await engine.getEvents({ sessionId, limit: 20 })
+
+// Format for LLM consumption
+const llmContext = formatter.format(predictions, events)
+const prompt = formatter.toNaturalLanguage(llmContext)
 ```
 
 ---
