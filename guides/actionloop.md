@@ -1663,13 +1663,13 @@ function getActivityTracker(): ActivityTrackerInterface {
 
 ## Browser Compatibility
 
-| Browser | Minimum Version | Notes |
-|---------|-----------------|-------|
-| Chrome | 89+ | Full support |
-| Firefox | 89+ | Full support |
-| Safari | 15+ | Full support |
-| Edge | 89+ | Full support |
-| Node.js | 22+ | Full support (no activity tracking) |
+| Browser | Minimum Version | Notes                               |
+|---------|-----------------|-------------------------------------|
+| Chrome  | 89+             | Full support                        |
+| Firefox | 89+             | Full support                        |
+| Safari  | 15+             | Full support                        |
+| Edge    | 89+             | Full support                        |
+| Node.js | 22+             | Full support (no activity tracking) |
 
 ### Feature Detection
 
@@ -1796,6 +1796,100 @@ broadcast.onStateChange((state, source) => {
 })
 ```
 
+### LLM Integration with ActionLoop Context Formatter
+
+ActionLoop can provide rich behavioral context to LLMs through the context formatter:
+
+```ts
+import {
+	createWorkflowEngine,
+	createActionLoopContextFormatter,
+} from '@mikesaintsg/actionloop'
+import { createContextBuilder } from '@mikesaintsg/contextbuilder'
+import { createEngine } from '@mikesaintsg/inference'
+
+// Create context formatter
+const formatter = createActionLoopContextFormatter({
+	maxRecentEvents: 10,
+	includePatterns: true,
+	getNodeLabel: (nodeId) => graph.getNode(nodeId)?.label ?? nodeId,
+})
+
+// Get predictions and events
+const predictions = engine.predictNextDetailed(currentNode, {
+	actor: 'user',
+	sessionId,
+	path: window.location.pathname,
+	count: 5,
+})
+
+const events = await engine.getEvents({ sessionId, limit: 20 })
+
+// Format for LLM consumption
+const llmContext = formatter.format(predictions, events)
+
+// Add to context builder
+const builder = createContextBuilder(tokenCounter, { budget: { maxTokens: 4000 } })
+
+builder.addFrame({
+	id: 'actionloop-context',
+	type: 'context',
+	priority: 'high',
+	content: formatter.toNaturalLanguage(llmContext),
+	metadata: { source: 'actionloop' },
+})
+
+// LLM now has awareness of:
+// - Current location
+// - Predicted next actions with confidence
+// - User engagement patterns
+// - Recent activity history
+```
+
+#### ActionLoopLLMContext Structure
+
+```ts
+interface ActionLoopLLMContext {
+	/** Current node/location */
+	readonly currentNode: string
+	/** Predictions with confidence */
+	readonly predictions: readonly FormattedPrediction[]
+	/** Whether predictions are reliable */
+	readonly warmupComplete: boolean
+	/** Total transitions recorded */
+	readonly transitionCount: number
+	/** Recent activity summary */
+	readonly recentActivity: readonly ActivitySummary[]
+	/** Current engagement state */
+	readonly engagement: EngagementState
+	/** Pattern insights (if analyzer available) */
+	readonly patterns?: PatternInsights
+}
+
+interface FormattedPrediction {
+	readonly nodeId: string
+	readonly label: string
+	readonly confidencePercent: number
+	readonly reasoning: string
+}
+```
+
+#### Natural Language Output Example
+
+```
+Current location: account-detail
+User engagement: active
+
+Predicted next actions (based on learned patterns):
+  - Billing: 85% likely (frequently visited, recently accessed)
+  - Settings: 62% likely (frequently visited)
+  - Support: 41% likely (based on workflow structure)
+
+Pattern insights:
+  - Frequent paths: dashboard → accounts → account-detail
+  - Bottlenecks: billing (high dwell time)
+```
+
 ---
 
 ## API Reference
@@ -1808,14 +1902,14 @@ Creates a static ProceduralGraph.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `transitions` | `readonly TransitionInput[]` | ✅ | — | Workflow transitions |
-| `nodes` | `readonly NodeInput[]` | | — | Explicit node definitions |
-| `procedures` | `readonly ProcedureInput[]` | | — | Procedure subgraphs |
-| `version` | `GraphVersion` | | — | Graph version metadata |
-| `validateOnCreate` | `boolean` | | `false` | Validate on creation |
-| `onValidation` | `ValidationCallback` | | — | Validation event callback |
+| Parameter          | Type                         | Required | Default | Description               |
+|--------------------|------------------------------|----------|---------|---------------------------|
+| `transitions`      | `readonly TransitionInput[]` | ✅        | —       | Workflow transitions      |
+| `nodes`            | `readonly NodeInput[]`       |          | —       | Explicit node definitions |
+| `procedures`       | `readonly ProcedureInput[]`  |          | —       | Procedure subgraphs       |
+| `version`          | `GraphVersion`               |          | —       | Graph version metadata    |
+| `validateOnCreate` | `boolean`                    |          | `false` | Validate on creation      |
+| `onValidation`     | `ValidationCallback`         |          | —       | Validation event callback |
 
 #### createPredictiveGraph(procedural, options? ): PredictiveGraphInterface
 
@@ -1823,17 +1917,17 @@ Creates a dynamic PredictiveGraph overlay.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `procedural` | `ProceduralGraphInterface` | ✅ | — | Underlying procedural graph |
-| `persistence` | `WeightPersistenceAdapterInterface` | | — | Opt-in weight persistence |
-| `decayAlgorithm` | `DecayAlgorithm` | | `'ewma'` | Weight decay algorithm |
-| `decayFactor` | `number` | | `0.9` | Decay factor (0.0–1.0) |
-| `halfLifeMs` | `number` | | — | Half-life for decay |
-| `minWeight` | `number` | | `0.01` | Minimum weight threshold |
-| `coldStart` | `ColdStartConfig` | | — | Cold-start configuration |
-| `onWeightUpdate` | callback | | — | Weight update event |
-| `onDecay` | callback | | — | Decay event |
+| Parameter        | Type                                | Required | Default  | Description                 |
+|------------------|-------------------------------------|----------|----------|-----------------------------|
+| `procedural`     | `ProceduralGraphInterface`          | ✅        | —        | Underlying procedural graph |
+| `persistence`    | `WeightPersistenceAdapterInterface` |          | —        | Opt-in weight persistence   |
+| `decayAlgorithm` | `DecayAlgorithm`                    |          | `'ewma'` | Weight decay algorithm      |
+| `decayFactor`    | `number`                            |          | `0.9`    | Decay factor (0.0–1.0)      |
+| `halfLifeMs`     | `number`                            |          | —        | Half-life for decay         |
+| `minWeight`      | `number`                            |          | `0.01`   | Minimum weight threshold    |
+| `coldStart`      | `ColdStartConfig`                   |          | —        | Cold-start configuration    |
+| `onWeightUpdate` | callback                            |          | —        | Weight update event         |
+| `onDecay`        | callback                            |          | —        | Decay event                 |
 
 #### createWorkflowEngine(procedural, predictive, options? ): WorkflowEngineInterface
 
@@ -1885,6 +1979,27 @@ Creates a workflow validator for static analysis.
 
 Creates a workflow analyzer for pattern detection.
 
+#### createActionLoopContextFormatter(options?): ActionLoopContextFormatterInterface
+
+Creates a context formatter for LLM integration.
+
+**Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `maxRecentEvents` | `number` | | `10` | Max events to include |
+| `includePatterns` | `boolean` | | `false` | Include pattern analysis |
+| `includeDwell` | `boolean` | | `true` | Include dwell times |
+| `getNodeLabel` | `(nodeId: string) => string` | | identity | Node label resolver |
+
+**Returns:** `ActionLoopContextFormatterInterface`
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `format(predictions, events, options?)` | `ActionLoopLLMContext` | Format state for LLM |
+| `toNaturalLanguage(context)` | `string` | Convert to natural language |
+| `toJSON(context)` | `string` | Convert to JSON string |
+
 ### ProceduralGraphInterface
 
 #### Accessor Methods
@@ -1932,33 +2047,33 @@ Creates a workflow analyzer for pattern detection.
 
 #### Accessor Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getWeight(from, to, actor)` | `number` | Get transition weight |
-| `getWeights(nodeId, actor)` | `readonly WeightedTransition[]` | Get all weighted transitions |
-| `getModelId()` | `string` | Get model identifier |
-| `getDecayConfig()` | `DecayConfig` | Get decay configuration |
-| `getStats()` | `PredictiveGraphStats` | Get statistics |
-| `hasWeight(from, to, actor)` | `boolean` | Check if weight exists |
-| `getTransitionCount()` | `number` | Get total transition count |
-| `isWarmupComplete()` | `boolean` | Check if warmup threshold met |
+| Method                       | Returns                         | Description                   |
+|------------------------------|---------------------------------|-------------------------------|
+| `getWeight(from, to, actor)` | `number`                        | Get transition weight         |
+| `getWeights(nodeId, actor)`  | `readonly WeightedTransition[]` | Get all weighted transitions  |
+| `getModelId()`               | `string`                        | Get model identifier          |
+| `getDecayConfig()`           | `DecayConfig`                   | Get decay configuration       |
+| `getStats()`                 | `PredictiveGraphStats`          | Get statistics                |
+| `hasWeight(from, to, actor)` | `boolean`                       | Check if weight exists        |
+| `getTransitionCount()`       | `number`                        | Get total transition count    |
+| `isWarmupComplete()`         | `boolean`                       | Check if warmup threshold met |
 
 #### Mutator Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `updateWeight(from, to, actor)` | `void` | Increment weight |
-| `updateWeightWithEngagement(from, to, actor, score)` | `void` | Update with engagement |
-| `setWeight(from, to, actor, weight)` | `void` | Set explicit weight |
-| `applyDecay()` | `number` | Apply decay to all weights |
-| `clear()` | `void` | Clear all weights |
-| `clearActor(actor)` | `void` | Clear weights for actor |
+| Method                                               | Returns  | Description                |
+|------------------------------------------------------|----------|----------------------------|
+| `updateWeight(from, to, actor)`                      | `void`   | Increment weight           |
+| `updateWeightWithEngagement(from, to, actor, score)` | `void`   | Update with engagement     |
+| `setWeight(from, to, actor, weight)`                 | `void`   | Set explicit weight        |
+| `applyDecay()`                                       | `number` | Apply decay to all weights |
+| `clear()`                                            | `void`   | Clear all weights          |
+| `clearActor(actor)`                                  | `void`   | Clear weights for actor    |
 
 #### Preload Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `preload(records)` | `void` | Preload historical records |
+| Method             | Returns | Description                |
+|--------------------|---------|----------------------------|
+| `preload(records)` | `void`  | Preload historical records |
 
 #### Persistence Methods
 

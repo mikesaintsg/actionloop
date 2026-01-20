@@ -4,7 +4,7 @@
  * Type definitions for the ActionLoop Predictive Procedural Action Loop System (PPALS).
  * All public types and interfaces are defined here as the SOURCE OF TRUTH.
  *
- * This package provides: 
+ * This package provides:
  * - ProceduralGraph: Static graph of valid transitions
  * - PredictiveGraph:  Dynamic weight overlay for adaptive predictions
  * - WorkflowEngine: Runtime engine for recording and prediction
@@ -13,7 +13,7 @@
  * - WorkflowAnalyzer: Pattern detection and optimization
  * - ActivityTracker:  Engagement-aware dwell time tracking
  *
- * Adapter interfaces are defined in @mikesaintsg/core and implemented in @mikesaintsg/adapters. 
+ * Adapter interfaces are defined in @mikesaintsg/core and implemented in @mikesaintsg/adapters.
  */
 
 import type {
@@ -21,30 +21,19 @@ import type {
 	Destroyable,
 	SubscriptionToHook,
 	// Shared ActionLoop types from core
+	Actor,
 	EngagementState,
 	DwellRecord,
-	PartialDwellRecord,
 	TransitionEvent,
 	EventFilter,
-	ExportedPredictiveGraph as CoreExportedPredictiveGraph,
+	ExportedPredictiveGraph,
 	DecayAlgorithm,
 	DecayConfig,
 	ActivityTrackerInterface,
-	ActivityTrackerConfig,
-	ActivityTrackerSubscriptions,
+	ActivityTrackerOptions,
 	EventStorePersistenceAdapterInterface,
 	WeightPersistenceAdapterInterface,
 } from '@mikesaintsg/core'
-
-/** Destroy function type derived from Destroyable interface */
-export type DestroyFn = Destroyable['destroy']
-
-// ============================================================================
-// Actor Types
-// ============================================================================
-
-/** Actor types for transition attribution */
-export type Actor = 'user' | 'system' | 'automation'
 
 // ============================================================================
 // Node Types
@@ -576,11 +565,6 @@ export interface ExportedProceduralGraph {
 	readonly procedures:  readonly Procedure[]
 }
 
-/** Exported predictive graph for persistence (extends core type) */
-export interface ExportedPredictiveGraph extends CoreExportedPredictiveGraph {
-	readonly warmupThreshold?:  number
-}
-
 /** Exported weight entry */
 export interface ExportedWeight {
 	readonly from: string
@@ -816,7 +800,7 @@ export type ActionLoopErrorInterface = Error & ActionLoopErrorData
 // ============================================================================
 
 /**
- * Procedural Graph interface - static graph of valid transitions. 
+ * Procedural Graph interface - static graph of valid transitions.
  *
  * Encodes every allowed action transition, serving as the single source
  * of truth for workflow compliance.
@@ -892,7 +876,7 @@ export interface ProceduralGraphInterface
 }
 
 /**
- * Predictive Graph interface - dynamic weight overlay. 
+ * Predictive Graph interface - dynamic weight overlay.
  *
  * Overlays dynamic weights on Procedural Graph transitions,
  * learning from usage patterns to improve predictions.
@@ -974,7 +958,7 @@ export interface PredictiveGraphInterface
 }
 
 /**
- * Workflow Engine interface - runtime engine for PPALS. 
+ * Workflow Engine interface - runtime engine for PPALS.
  *
  * Bridges static Procedural Graph rules and dynamic Predictive Graph
  * learning to power the observe-update-predict-recommend cycle.
@@ -1153,7 +1137,7 @@ export interface WorkflowBuilderInterface
 }
 
 /**
- * Workflow Validator interface - static analysis. 
+ * Workflow Validator interface - static analysis.
  *
  * Performs comprehensive static checks on Procedural Graph
  * definitions to enforce structural and guard-logic correctness.
@@ -1274,7 +1258,7 @@ export interface WorkflowAnalyzerInterface
 // ============================================================================
 
 /**
- * Create a Procedural Graph. 
+ * Create a Procedural Graph.
  *
  * @param options - Graph configuration with transitions and optional nodes/procedures
  * @returns Procedural graph interface
@@ -1321,7 +1305,7 @@ export type CreatePredictiveGraph = (
 ) => PredictiveGraphInterface
 
 /**
- * Create a Workflow Engine. 
+ * Create a Workflow Engine.
  *
  * @param procedural - The static procedural graph (required first param)
  * @param predictive - The dynamic predictive graph overlay (required second param)
@@ -1368,7 +1352,7 @@ export type CreateWorkflowBuilder = (
 ) => WorkflowBuilderInterface
 
 /**
- * Create a Workflow Validator. 
+ * Create a Workflow Validator.
  *
  * @param procedural - The procedural graph to validate (required first param)
  * @param options - Optional validator configuration
@@ -1388,7 +1372,7 @@ export type CreateWorkflowValidator = (
 ) => WorkflowValidatorInterface
 
 /**
- * Create a Workflow Analyzer. 
+ * Create a Workflow Analyzer.
  *
  * @param procedural - The procedural graph to analyze (required first param)
  * @param predictive - The predictive graph with runtime weights (required second param)
@@ -1410,7 +1394,7 @@ export type CreateWorkflowAnalyzer = (
 ) => WorkflowAnalyzerInterface
 
 /**
- * Create an Activity Tracker. 
+ * Create an Activity Tracker.
  *
  * @param config - Optional activity tracker configuration
  * @returns Activity tracker interface
@@ -1429,7 +1413,7 @@ export type CreateWorkflowAnalyzer = (
  * ```
  */
 export type CreateActivityTracker = (
-	config?: ActivityTrackerConfig
+	config?: ActivityTrackerOptions
 ) => ActivityTrackerInterface
 
 // ============================================================================
@@ -1476,7 +1460,7 @@ export type IsDwellRecord = (value: unknown) => value is DwellRecord
 // ============================================================================
 
 /**
- * Weight entry for predictive graph weight storage. 
+ * Weight entry for predictive graph weight storage.
  * @internal Used by PredictiveGraph implementation
  */
 export interface WeightEntry {
@@ -1507,3 +1491,82 @@ export interface ActivityState {
 	lastActivityTime: number
 	engagement: EngagementState
 }
+
+/** Formatted ActionLoop context for LLM consumption */
+export interface ActionLoopLLMContext {
+	/** Current node/location */
+	readonly currentNode: string
+	/** Predictions with confidence */
+	readonly predictions: readonly FormattedPrediction[]
+	/** Whether predictions are reliable */
+	readonly warmupComplete: boolean
+	/** Total transitions recorded */
+	readonly transitionCount:  number
+	/** Recent activity summary */
+	readonly recentActivity: readonly ActivitySummary[]
+	/** Current engagement state */
+	readonly engagement: EngagementState
+	/** Pattern insights (if analyzer available) */
+	readonly patterns?:  PatternInsights
+}
+
+/** Formatted prediction for LLM */
+export interface FormattedPrediction {
+	readonly nodeId: string
+	readonly label: string
+	readonly confidencePercent: number
+	readonly reasoning: string
+}
+
+/** Activity summary for LLM */
+export interface ActivitySummary {
+	readonly from: string
+	readonly to: string
+	readonly actor: string
+	readonly timestamp: number
+	readonly dwellSeconds?:  number
+	readonly engagement?: EngagementState
+}
+
+/** Pattern insights for LLM */
+export interface PatternInsights {
+	readonly frequentPaths:  readonly string[]
+	readonly bottlenecks: readonly string[]
+	readonly automationCandidates: readonly string[]
+	readonly avgSessionMinutes:  number
+}
+
+/** Context formatter options */
+export interface ContextFormatterOptions {
+	/** Maximum recent events to include */
+	readonly maxRecentEvents?: number
+	/** Include pattern analysis */
+	readonly includePatterns?: boolean
+	/** Include dwell times */
+	readonly includeDwell?: boolean
+	/** Node label resolver */
+	readonly getNodeLabel?: (nodeId: string) => string
+}
+
+/** ActionLoop context formatter interface */
+export interface ActionLoopContextFormatterInterface {
+	/** Format ActionLoop state for LLM context */
+	format(
+		predictions: DetailedPrediction,
+		events: readonly TransitionEvent[],
+		options?:  ContextFormatterOptions
+	): ActionLoopLLMContext
+
+	/** Format as natural language for system prompt */
+	toNaturalLanguage(context: ActionLoopLLMContext): string
+
+	/** Format as structured JSON for tool context */
+	toJSON(context: ActionLoopLLMContext): string
+}
+
+/**
+ * Factory for context formatter.
+ */
+export type CreateActionLoopContextFormatter = (
+	options?:  ContextFormatterOptions
+) => ActionLoopContextFormatterInterface

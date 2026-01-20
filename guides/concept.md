@@ -105,7 +105,7 @@ interface SomeAdapterInterface {
 Policy adapters have their own dedicated interfaces:
 
 ```ts
-/** Retry policy adapter - determines retry behavior */
+/** Retry policies adapter - determines retry behavior */
 interface RetryAdapterInterface {
   shouldRetry(error: unknown, attempt: number): boolean
   getDelay(attempt: number): number
@@ -248,13 +248,13 @@ async function embed(text: string): Promise<Embedding> {
     if (cached) return cached
   }
   
-  // 2. Apply rate limit policy (only if provided)
+  // 2. Apply rate limit policies (only if provided)
   if (this.#rateLimit) {
     await this.#rateLimit.acquire()
   }
   
   try {
-    // 3. Use retry policy (only if provided)
+    // 3. Use retry policies (only if provided)
     const embedding = this.#retry
       ? await this.#executeWithRetry(() => this.#embedding.embed([text]))
       : await this.#embedding.embed([text])
@@ -1292,47 +1292,15 @@ const embedding = createVoyageEmbeddingAdapter({
 })
 ```
 
-## Token Adapters
-
-### Estimator (Default)
-
-```ts
-import { createEstimatorTokenAdapter } from '@mikesaintsg/adapters'
-
-const token = createEstimatorTokenAdapter({
-	charsPerToken: 4, // default
-	contextWindow: 128000,
-})
-```
-
-### Model-Specific
-
-```ts
-import { createModelTokenAdapter } from '@mikesaintsg/adapters'
-
-const token = createModelTokenAdapter({
-	model:  'gpt-4o',
-	// Uses built-in multipliers per model
-})
-```
-
 ## Session Persistence Adapters
 
-### InMemory (Default)
+### IndexedDB Session Persistence
 
 ```ts
-import { createInMemorySessionAdapter } from '@mikesaintsg/adapters'
+import { createIndexedDBSessionPersistenceAdapter } from '@mikesaintsg/adapters'
 
-const session = createInMemorySessionAdapter()
-```
-
-### IndexedDB
-
-```ts
-import { createIndexedDBSessionAdapter } from '@mikesaintsg/adapters'
-
-const session = createIndexedDBSessionAdapter({
-	database: db, // MinimalDatabaseAccess
+const session = createIndexedDBSessionPersistenceAdapter({
+	databaseName: 'my-app-sessions',
 	storeName: 'sessions',
 	ttlMs: 7 * 24 * 60 * 60 * 1000, // 7 days
 })
@@ -1340,13 +1308,6 @@ const session = createIndexedDBSessionAdapter({
 
 ## Vector Persistence Adapters
 
-### InMemory
-
-```ts
-import { createInMemoryVectorPersistenceAdapter } from '@mikesaintsg/adapters'
-
-const persistence = createInMemoryVectorPersistenceAdapter()
-```
 
 ### IndexedDB
 
@@ -1437,23 +1398,25 @@ type AdapterErrorCode =
 - `createOpenAIEmbeddingAdapter(options)` → `EmbeddingAdapterInterface`
 - `createVoyageEmbeddingAdapter(options)` → `EmbeddingAdapterInterface`
 - `createOllamaEmbeddingAdapter(options)` → `EmbeddingAdapterInterface`
-
-### Token Adapters
-
-- `createEstimatorTokenAdapter(options?)` → `TokenAdapterInterface`
-- `createModelTokenAdapter(options)` → `TokenAdapterInterface`
+- `createNodeLlamaCppEmbeddingAdapter(options)` → `EmbeddingAdapterInterface`
+- `createHuggingFaceEmbeddingAdapter(options)` → `EmbeddingAdapterInterface`
 
 ### Session Adapters
 
-- `createInMemorySessionAdapter()` → `SessionPersistenceAdapterInterface`
-- `createIndexedDBSessionAdapter(options)` → `SessionPersistenceAdapterInterface`
+- `createIndexedDBSessionPersistenceAdapter(options?)` → `SessionPersistenceInterface`
 
 ### Vector Persistence Adapters
 
-- `createInMemoryVectorPersistenceAdapter()` → `VectorPersistenceAdapterInterface`
-- `createIndexedDBVectorPersistenceAdapter(options)` → `VectorPersistenceAdapterInterface`
-- `createOPFSVectorPersistenceAdapter(options)` → `VectorPersistenceAdapterInterface`
-- `createHTTPVectorPersistenceAdapter(options)` → `VectorPersistenceAdapterInterface`
+- `createIndexedDBVectorPersistenceAdapter(options)` → `VectorStorePersistenceAdapterInterface`
+- `createOPFSVectorPersistenceAdapter(options)` → `VectorStorePersistenceAdapterInterface`
+- `createHTTPVectorPersistenceAdapter(options)` → `VectorStorePersistenceAdapterInterface`
+
+### ActionLoop Persistence Adapters
+
+- `createIndexedDBEventPersistenceAdapter(options)` → `EventStorePersistenceAdapterInterface`
+- `createIndexedDBWeightPersistenceAdapter(options)` → `WeightPersistenceAdapterInterface`
+- `createInMemoryEventPersistenceAdapter(options?)` → `EventStorePersistenceAdapterInterface`
+- `createInMemoryWeightPersistenceAdapter()` → `WeightPersistenceAdapterInterface`
 
 ### Tool Format Adapters
 
@@ -1468,24 +1431,34 @@ type AdapterErrorCode =
 
 ### Policy Adapters
 
-- `createExponentialRetryAdapter(options)` → `RetryAdapterInterface`
-- `createLinearRetryAdapter(options)` → `RetryAdapterInterface`
-- `createTokenBucketRateLimitAdapter(options)` → `RateLimitAdapterInterface`
-- `createSlidingWindowRateLimitAdapter(options)` → `RateLimitAdapterInterface`
+- `createExponentialRetryAdapter(options?)` → `RetryAdapterInterface`
+- `createLinearRetryAdapter(options?)` → `RetryAdapterInterface`
+- `createTokenBucketRateLimitAdapter(options?)` → `RateLimitAdapterInterface`
+- `createSlidingWindowRateLimitAdapter(options?)` → `RateLimitAdapterInterface`
 
 ### Enhancement Adapters
 
-- `createLRUCacheAdapter(options)` → `EmbeddingCacheAdapterInterface`
-- `createTTLCacheAdapter(options)` → `EmbeddingCacheAdapterInterface`
+- `createLRUCacheAdapter(options?)` → `EmbeddingCacheAdapterInterface`
+- `createTTLCacheAdapter(options?)` → `EmbeddingCacheAdapterInterface`
 - `createIndexedDBCacheAdapter(options)` → `EmbeddingCacheAdapterInterface`
-- `createBatchAdapter(options)` → `BatchAdapterInterface`
-- `createAggressiveBatchAdapter(options)` → `BatchAdapterInterface`
+- `createBatchAdapter(options?)` → `BatchAdapterInterface`
 - `createCohereRerankerAdapter(options)` → `RerankerAdapterInterface`
 - `createCrossEncoderRerankerAdapter(options)` → `RerankerAdapterInterface`
 
-### Utilities
+### Context Builder Adapters
 
-- `createSSEParser(options)` → `SSEParserInterface`
+- `createDeduplicationAdapter(options?)` → `DeduplicationAdapterInterface`
+- `createFIFOTruncationAdapter(options?)` → `TruncationAdapterInterface`
+- `createLIFOTruncationAdapter(options?)` → `TruncationAdapterInterface`
+- `createPriorityTruncationAdapter(options?)` → `TruncationAdapterInterface`
+- `createScoreTruncationAdapter(options?)` → `TruncationAdapterInterface`
+- `createPriorityAdapter(options?)` → `PriorityAdapterInterface`
+
+### Streaming Adapters
+
+- `createStreamerAdapter()` → `StreamerAdapterInterface`
+- `createSSEParserAdapter(options?)` → `SSEParserAdapterInterface`
+- `createProviderStreamHandle(options)` → `ProviderStreamHandleInterface`
 ````
 
 ```typescript name=types/adapters/types.ts
