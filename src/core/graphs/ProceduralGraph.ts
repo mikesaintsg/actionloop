@@ -31,7 +31,7 @@ import { EXPORT_VERSION } from '../../constants.js'
 // Implementation
 // ============================================================================
 
-class ProceduralGraph implements ProceduralGraphInterface {
+export class ProceduralGraph implements ProceduralGraphInterface {
 	readonly #nodes: Map<string, Node>
 	readonly #transitions:  Map<string, Transition>
 	readonly #outgoing: Map<string, Set<string>>
@@ -382,31 +382,4 @@ class ProceduralGraph implements ProceduralGraphInterface {
 	destroy(): void {
 		this.#validationListeners.clear()
 	}
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a Procedural Graph.
- *
- * @param options - Graph configuration with transitions and optional nodes/procedures
- * @returns Procedural graph interface
- *
- * @example
- * ```ts
- * import { createProceduralGraph } from '@mikesaintsg/actionloop'
- *
- * const graph = createProceduralGraph({
- *   transitions: [
- *     { from: 'login', to: 'dashboard', weight: 1, actor: 'user' },
- *   ],
- * })
- * ```
- */
-export function createProceduralGraph(
-	options: ProceduralGraphOptions,
-): ProceduralGraphInterface {
-	return new ProceduralGraph(options)
 }

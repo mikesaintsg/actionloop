@@ -23,7 +23,7 @@ import { createTransitionKey, isValidGuardSyntax } from '../../helpers.js'
 // Implementation
 // ============================================================================
 
-class WorkflowValidator implements WorkflowValidatorInterface {
+export class WorkflowValidator implements WorkflowValidatorInterface {
 	readonly #procedural: ProceduralGraphInterface
 	readonly #strictMode: boolean
 	readonly #validateGuards: boolean
@@ -54,16 +54,23 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 	// ---- Validation Methods ----
 
 	runStaticChecks(): readonly ValidationResult[] {
-		this.#results. length = 0
+		this.#results.length = 0
 
-		// Check for dangling nodes
+		// First, check if the graph is cyclical (this is expected for ActionLoop)
+		const cycles = this.checkCycles()
+		const isCyclical = cycles.length > 0
+
+		// Check for dangling nodes (dead ends)
+		// In a cyclical graph, true dead ends are nodes that have incoming but no outgoing
+		// AND are not part of any cycle
 		const dangling = this.findDanglingNodes()
 		for (const nodeId of dangling) {
+			// For cyclical graphs, only report as info since dead ends may be intentional exit points
 			this.#results.push({
-				passed: false,
-				message: `Node '${nodeId}' has no outgoing transitions (dead end)`,
-				severity: (this.#strictMode ? 'error' : 'warning') as ValidationSeverity,
-				suggestion: 'Add outgoing transitions or mark as terminal node',
+				passed: !this.#strictMode,
+				message: `Node '${nodeId}' has no outgoing transitions (terminal node)`,
+				severity: (this.#strictMode ? 'error' : 'info') as ValidationSeverity,
+				suggestion: 'This node is a terminal/exit point in the workflow',
 				nodeId,
 			})
 		}
@@ -80,15 +87,25 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 			})
 		}
 
-		// Check boundary nodes
+		// Check boundary nodes - but for cyclical graphs, not having start/end nodes is expected
 		const boundary = this.findMissingBoundaryNodes()
 		if (boundary.missingStart) {
-			this.#results.push({
-				passed: false,
-				message: 'Graph has no start nodes (all nodes have incoming transitions)',
-				severity: (this.#strictMode ? 'error' : 'warning') as ValidationSeverity,
-				suggestion: 'Ensure at least one node has no incoming transitions',
-			})
+			if (isCyclical) {
+				// Cyclical graphs don't need explicit start nodes - this is by design
+				this.#results.push({
+					passed: true,
+					message: 'Graph is cyclical - no explicit start node required',
+					severity: 'info' as ValidationSeverity,
+					suggestion: 'Cyclical workflows allow entry from any node in the cycle',
+				})
+			} else {
+				this.#results.push({
+					passed: false,
+					message: 'Graph has no start nodes (all nodes have incoming transitions)',
+					severity: (this.#strictMode ? 'error' : 'warning') as ValidationSeverity,
+					suggestion: 'Ensure at least one node has no incoming transitions',
+				})
+			}
 		}
 
 		// Validate guards if enabled
@@ -406,30 +423,4 @@ class WorkflowValidator implements WorkflowValidatorInterface {
 		this.#validationCompleteListeners.clear()
 		this.#results.length = 0
 	}
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a Workflow Validator.
- *
- * @param procedural - The procedural graph to validate
- * @param options - Optional validator configuration
- * @returns Workflow validator interface
- *
- * @example
- * ```ts
- * import { createWorkflowValidator } from '@mikesaintsg/actionloop'
- *
- * const validator = createWorkflowValidator(procedural)
- * const results = validator.runStaticChecks()
- * ```
- */
-export function createWorkflowValidator(
-	procedural: ProceduralGraphInterface,
-	options?:  WorkflowValidatorOptions,
-): WorkflowValidatorInterface {
-	return new WorkflowValidator(procedural, options)
 }

@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@mikesaintsg/actionloop.svg)](https://www.npmjs.com/package/@mikesaintsg/actionloop)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@mikesaintsg/actionloop)](https://bundlephobia.com/package/@mikesaintsg/actionloop)
 [![license](https://img.shields.io/npm/l/@mikesaintsg/actionloop.svg)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-265%20passing-brightgreen)](./tests)
+[![tests](https://img.shields.io/badge/tests-244%20passing-brightgreen)](./tests)
 
 ---
 
@@ -98,16 +98,16 @@ engine.destroy()
 
 ### Factory Functions
 
-| Function                                                   | Description                                         |
-|------------------------------------------------------------|-----------------------------------------------------|
-| `createProceduralGraph(options)`                           | Create a static procedural graph                    |
-| `createPredictiveGraph(procedural, options?)`              | Create a dynamic predictive graph overlay           |
-| `createWorkflowEngine(procedural, predictive, options?)`   | Create workflow engine for recording and prediction |
-| `createWorkflowBuilder(options?)`                          | Create builder for programmatic graph construction  |
-| `createWorkflowValidator(procedural, options?)`            | Create validator for static analysis                |
-| `createWorkflowAnalyzer(procedural, predictive, options?)` | Create analyzer for pattern detection               |
+| Function                                                   | Description                                                      |
+|------------------------------------------------------------|------------------------------------------------------------------|
+| `createProceduralGraph(options)`                           | Create a static procedural graph                                 |
+| `createPredictiveGraph(procedural, options?)`              | Create a dynamic predictive graph overlay                        |
+| `createWorkflowEngine(procedural, predictive, options?)`   | Create workflow engine for recording and prediction              |
+| `createWorkflowBuilder(options?)`                          | Create builder for programmatic graph construction               |
+| `createWorkflowValidator(procedural, options?)`            | Create validator for static analysis                             |
+| `createWorkflowAnalyzer(procedural, predictive, options?)` | Create analyzer for pattern detection                            |
 | `createActivityTracker(options?)`                          | Create activity tracker for engagement-aware dwell time tracking |
-| `createActionLoopContextFormatter(options?)`               | Create context formatter for LLM integration        |
+| `createActionLoopContextFormatter(options?)`               | Create context formatter for LLM integration                     |
 
 ### WorkflowEngine Interface
 
@@ -309,6 +309,27 @@ npm test
 # Build showcase demo
 npm run show
 ```
+
+### Interactive Showcase
+
+The showcase (`showcase.html`) demonstrates ActionLoop with **four real-world scenarios**:
+
+| Scenario                   | Description                                                             |
+|----------------------------|-------------------------------------------------------------------------|
+| 🛒 **E-Commerce Checkout** | Multi-step checkout with cart, shipping, payment, and confirmation      |
+| 📊 **SaaS Dashboard**      | Account management with analytics, settings, billing, and team features |
+| 🎫 **Support Ticketing**   | Ticket lifecycle with triage, assignment, resolution, and escalation    |
+| 🚀 **User Onboarding**     | New user onboarding with profile setup, preferences, and tutorial       |
+
+Features demonstrated:
+- **Predictions with Confidence** — See AI-ranked next actions with confidence bars
+- **Actor Modes** — Switch between user, system, and automation actors
+- **Activity Tracking** — Real-time engagement state and dwell time monitoring
+- **Workflow Analysis** — Detect loops, bottlenecks, and automation opportunities
+- **LLM Context** — Generate formatted context for AI integrations
+- **Builder Demo** — Programmatic graph construction
+
+Run `npm run show` to build the showcase, then open `showcase.html` in a browser.
 
 ---
 

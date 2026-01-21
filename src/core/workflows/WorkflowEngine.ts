@@ -54,7 +54,7 @@ import {
 // Implementation
 // ============================================================================
 
-class WorkflowEngine implements WorkflowEngineInterface {
+export class WorkflowEngine implements WorkflowEngineInterface {
 	readonly #procedural: ProceduralGraphInterface
 	readonly #predictive: PredictiveGraphInterface
 	readonly #sessions: Map<string, SessionEntry>
@@ -542,38 +542,9 @@ class WorkflowEngine implements WorkflowEngineInterface {
 		this.#transitionListeners.clear()
 		this.#predictionListeners.clear()
 		this.#sessionStartListeners.clear()
-		this.#sessionEndListeners. clear()
+		this.#sessionEndListeners.clear()
 		this.#errorListeners.clear()
 		this.#sessions.clear()
 		this.#actorSessions.clear()
 	}
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a Workflow Engine.
- *
- * @param procedural - The static procedural graph
- * @param predictive - The dynamic predictive graph overlay
- * @param options - Optional engine configuration
- * @returns Workflow engine interface
- *
- * @example
- * ```ts
- * import { createWorkflowEngine } from '@mikesaintsg/actionloop'
- *
- * const engine = createWorkflowEngine(procedural, predictive, {
- *   onTransition: (from, to, ctx) => console.log(`${from} -> ${to}`),
- * })
- * ```
- */
-export function createWorkflowEngine(
-	procedural: ProceduralGraphInterface,
-	predictive: PredictiveGraphInterface,
-	options?:  WorkflowEngineOptions,
-): WorkflowEngineInterface {
-	return new WorkflowEngine(procedural, predictive, options)
 }

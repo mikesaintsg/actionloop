@@ -9,7 +9,7 @@ import type {
 	DecayConfig,
 	Unsubscribe,
 	ExportedPredictiveGraph,
-	ExportedWeight,
+	ExportedWeight, WeightPersistenceAdapterInterface,
 } from '@mikesaintsg/core'
 import type {
 	WeightedTransition,
@@ -35,14 +35,14 @@ import {
 // Implementation
 // ============================================================================
 
-class PredictiveGraph implements PredictiveGraphInterface {
+export class PredictiveGraph implements PredictiveGraphInterface {
 	readonly #procedural: ProceduralGraphInterface
 	readonly #weights: Map<string, WeightEntry>
 	readonly #modelId: string
 	readonly #decayConfig: DecayConfig
 	readonly #minWeight: number
 	readonly #warmupThreshold: number
-	readonly #persistence: import('@mikesaintsg/core').WeightPersistenceAdapterInterface | undefined
+	readonly #persistence: WeightPersistenceAdapterInterface | undefined
 
 	readonly #weightUpdateListeners: Set<
 		(from: string, to:  string, actor: Actor, weight: number) => void
@@ -494,34 +494,6 @@ class PredictiveGraph implements PredictiveGraphInterface {
 	destroy(): void {
 		this.#weightUpdateListeners.clear()
 		this.#decayListeners.clear()
-		this.#weights. clear()
+		this.#weights.clear()
 	}
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a Predictive Graph overlay.
- *
- * @param procedural - The underlying procedural graph
- * @param options - Optional decay and preload configuration
- * @returns Predictive graph interface
- *
- * @example
- * ```ts
- * import { createPredictiveGraph } from '@mikesaintsg/actionloop'
- *
- * const predictive = createPredictiveGraph(procedural, {
- *   decayAlgorithm: 'ewma',
- *   decayFactor: 0.9,
- * })
- * ```
- */
-export function createPredictiveGraph(
-	procedural: ProceduralGraphInterface,
-	options?:  PredictiveGraphOptions,
-): PredictiveGraphInterface {
-	return new PredictiveGraph(procedural, options)
 }

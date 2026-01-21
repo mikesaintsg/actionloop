@@ -2,7 +2,7 @@
 
 > **Predictive Procedural Action Loop System (PPALS) — Combine deterministic workflow rules with adaptive, data-driven predictions to guide users through complex multi-step workflows with activity-aware intelligence.**
 
-**Version:** 2.0.0 | **Tests:** 280+ passing | **Bundle:** Zero dependencies
+**Version:** 0.0.1 | **Tests:** 244 passing | **Bundle:** Zero dependencies
 
 ---
 
@@ -52,30 +52,30 @@
 
 ### Use Cases
 
-| Use Case | Feature |
-|----------|---------|
-| Multi-step onboarding | Guide users through registration with contextual suggestions |
-| E-commerce checkout | Predict likely next steps while enforcing valid sequences |
-| Account management | Intelligent navigation with activity-aware recommendations |
-| Approval workflows | Route documents with confidence-scored next-action suggestions |
-| Form wizards | Suggest optimal paths through complex multi-page forms |
-| Task management | Recommend actions based on engagement patterns, not just clicks |
-| Support ticketing | Route tickets with audit-ready event trails |
-| SaaS applications | Multi-tenant workflow isolation with namespace support |
+| Use Case              | Feature                                                         |
+|-----------------------|-----------------------------------------------------------------|
+| Multi-step onboarding | Guide users through registration with contextual suggestions    |
+| E-commerce checkout   | Predict likely next steps while enforcing valid sequences       |
+| Account management    | Intelligent navigation with activity-aware recommendations      |
+| Approval workflows    | Route documents with confidence-scored next-action suggestions  |
+| Form wizards          | Suggest optimal paths through complex multi-page forms          |
+| Task management       | Recommend actions based on engagement patterns, not just clicks |
+| Support ticketing     | Route tickets with audit-ready event trails                     |
+| SaaS applications     | Multi-tenant workflow isolation with namespace support          |
 
 ### When to Use actionloop
 
-| Scenario | Use actionloop | Use alternatives |
-|----------|----------------|------------------|
-| Multi-step workflows with defined valid transitions | ✅ | |
-| Need to enforce business rules on navigation | ✅ | |
-| Want adaptive recommendations without ML training | ✅ | |
-| Need sub-50ms recommendation latency | ✅ | |
-| Require audit trails for compliance | ✅ | |
-| Need activity-aware predictions (not just click count) | ✅ | |
-| Simple linear wizards without branching | | ✅ |
-| Fully random navigation patterns | | ✅ |
-| Server-side only workflow orchestration | | ✅ |
+| Scenario                                               | Use actionloop | Use alternatives |
+|--------------------------------------------------------|----------------|------------------|
+| Multi-step workflows with defined valid transitions    | ✅              |                  |
+| Need to enforce business rules on navigation           | ✅              |                  |
+| Want adaptive recommendations without ML training      | ✅              |                  |
+| Need sub-50ms recommendation latency                   | ✅              |                  |
+| Require audit trails for compliance                    | ✅              |                  |
+| Need activity-aware predictions (not just click count) | ✅              |                  |
+| Simple linear wizards without branching                |                | ✅                |
+| Fully random navigation patterns                       |                | ✅                |
+| Server-side only workflow orchestration                |                | ✅                |
 
 ---
 
@@ -267,10 +267,10 @@ ActionLoop uses two complementary graph models:
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Graph | Purpose | Mutability | Contents |
-|-------|---------|------------|----------|
-| **ProceduralGraph** | Define valid transitions | Static (immutable at runtime) | Nodes, transitions, procedures, guards |
-| **PredictiveGraph** | Learn usage patterns | Dynamic (updated on each event) | Per-transition weights by actor with confidence |
+| Graph               | Purpose                  | Mutability                      | Contents                                        |
+|---------------------|--------------------------|---------------------------------|-------------------------------------------------|
+| **ProceduralGraph** | Define valid transitions | Static (immutable at runtime)   | Nodes, transitions, procedures, guards          |
+| **PredictiveGraph** | Learn usage patterns     | Dynamic (updated on each event) | Per-transition weights by actor with confidence |
 
 ### Adapter Architecture
 
@@ -300,11 +300,11 @@ ActionLoop follows the ecosystem adapter pattern for pluggable behavior:
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Adapter | Category | Purpose | Package |
-|---------|----------|---------|---------|
-| `ActivityTrackerInterface` | Enhancement | Engagement tracking | `actionloop` |
-| `EventStorePersistenceAdapterInterface` | Persistence | Event audit trail | `core` (interface), `adapters` (impl) |
-| `WeightPersistenceAdapterInterface` | Persistence | Weight storage | `core` (interface), `adapters` (impl) |
+| Adapter                                 | Category    | Purpose             | Package                               |
+|-----------------------------------------|-------------|---------------------|---------------------------------------|
+| `ActivityTrackerInterface`              | Enhancement | Engagement tracking | `actionloop`                          |
+| `EventStorePersistenceAdapterInterface` | Persistence | Event audit trail   | `core` (interface), `adapters` (impl) |
+| `WeightPersistenceAdapterInterface`     | Persistence | Weight storage      | `core` (interface), `adapters` (impl) |
 
 ### Actor Types
 
@@ -922,10 +922,10 @@ const count = await engine.getEventCount({ actor: 'user' })
 
 ### Available Adapters
 
-| Adapter | Use Case |
-|---------|----------|
+| Adapter                                  | Use Case                                 |
+|------------------------------------------|------------------------------------------|
 | `createIndexedDBEventPersistenceAdapter` | Browser apps with persistent audit trail |
-| `createInMemoryEventPersistenceAdapter` | Testing or ephemeral tracking |
+| `createInMemoryEventPersistenceAdapter`  | Testing or ephemeral tracking            |
 
 ### Without Event Persistence
 
@@ -981,10 +981,10 @@ predictive.import(exported)
 
 ### Available Adapters
 
-| Adapter | Use Case |
-|---------|----------|
+| Adapter                                   | Use Case                              |
+|-------------------------------------------|---------------------------------------|
 | `createIndexedDBWeightPersistenceAdapter` | Browser apps with persistent learning |
-| `createInMemoryWeightPersistenceAdapter` | Testing |
+| `createInMemoryWeightPersistenceAdapter`  | Testing                               |
 
 ---
 
@@ -1458,26 +1458,26 @@ try {
 
 ### Error Codes
 
-| Code | Description | Common Cause | Recovery |
-|------|-------------|--------------|----------|
-| `INVALID_TRANSITION` | Transition not allowed | Recording undefined transition | Check ProceduralGraph definition |
-| `NODE_NOT_FOUND` | Node does not exist | Referencing missing node | Verify node ID |
-| `DUPLICATE_NODE` | Node already exists | Adding existing node | Use `updateNode()` instead |
-| `DUPLICATE_TRANSITION` | Transition already exists | Adding existing transition | Use `updateTransition()` instead |
-| `SESSION_NOT_FOUND` | Session does not exist | Invalid session ID | Start new session |
-| `SESSION_EXPIRED` | Session has timed out | Exceeding session timeout | Resume or start new session |
-| `SESSION_ALREADY_ENDED` | Session was already ended | Double-ending session | Check session state first |
-| `DANGLING_NODE` | Node has no exits | Missing outgoing transitions | Add transitions or mark as end node |
-| `UNREACHABLE_NODE` | Node cannot be reached | No incoming transitions | Add transitions or remove node |
-| `MISSING_START_NODE` | No start nodes defined | All nodes have incoming | Mark at least one as start |
-| `MISSING_END_NODE` | No end nodes defined | All nodes have outgoing | Mark at least one as end |
-| `GUARD_SYNTAX_ERROR` | Invalid guard expression | Malformed guard string | Check guard syntax |
-| `BUILD_FAILED` | Graph build failed | Invalid builder state | Check validation errors |
-| `IMPORT_FAILED` | Import parse error | Malformed JSON/YAML | Validate import data |
-| `EXPORT_FAILED` | Export serialization error | Circular references | Check graph structure |
-| `MODEL_MISMATCH` | Imported weights don't match graph | Graph changed after export | Re-export or migrate |
-| `INSUFFICIENT_DATA` | Not enough data for analysis | Cold-start condition | Record more transitions |
-| `UNKNOWN` | Unknown error | Unexpected condition | Check logs, report bug |
+| Code                    | Description                        | Common Cause                   | Recovery                            |
+|-------------------------|------------------------------------|--------------------------------|-------------------------------------|
+| `INVALID_TRANSITION`    | Transition not allowed             | Recording undefined transition | Check ProceduralGraph definition    |
+| `NODE_NOT_FOUND`        | Node does not exist                | Referencing missing node       | Verify node ID                      |
+| `DUPLICATE_NODE`        | Node already exists                | Adding existing node           | Use `updateNode()` instead          |
+| `DUPLICATE_TRANSITION`  | Transition already exists          | Adding existing transition     | Use `updateTransition()` instead    |
+| `SESSION_NOT_FOUND`     | Session does not exist             | Invalid session ID             | Start new session                   |
+| `SESSION_EXPIRED`       | Session has timed out              | Exceeding session timeout      | Resume or start new session         |
+| `SESSION_ALREADY_ENDED` | Session was already ended          | Double-ending session          | Check session state first           |
+| `DANGLING_NODE`         | Node has no exits                  | Missing outgoing transitions   | Add transitions or mark as end node |
+| `UNREACHABLE_NODE`      | Node cannot be reached             | No incoming transitions        | Add transitions or remove node      |
+| `MISSING_START_NODE`    | No start nodes defined             | All nodes have incoming        | Mark at least one as start          |
+| `MISSING_END_NODE`      | No end nodes defined               | All nodes have outgoing        | Mark at least one as end            |
+| `GUARD_SYNTAX_ERROR`    | Invalid guard expression           | Malformed guard string         | Check guard syntax                  |
+| `BUILD_FAILED`          | Graph build failed                 | Invalid builder state          | Check validation errors             |
+| `IMPORT_FAILED`         | Import parse error                 | Malformed JSON/YAML            | Validate import data                |
+| `EXPORT_FAILED`         | Export serialization error         | Circular references            | Check graph structure               |
+| `MODEL_MISMATCH`        | Imported weights don't match graph | Graph changed after export     | Re-export or migrate                |
+| `INSUFFICIENT_DATA`     | Not enough data for analysis       | Cold-start condition           | Record more transitions             |
+| `UNKNOWN`               | Unknown error                      | Unexpected condition           | Check logs, report bug              |
 
 ### Error Handling Patterns
 
@@ -1935,23 +1935,23 @@ Creates a WorkflowEngine.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `procedural` | `ProceduralGraphInterface` | ✅ | — | Static procedural graph |
-| `predictive` | `PredictiveGraphInterface` | ✅ | — | Dynamic predictive graph |
-| `activity` | `ActivityTrackerInterface` | | — | Opt-in activity tracking |
-| `eventPersistence` | `EventStorePersistenceAdapterInterface` | | — | Opt-in event persistence |
-| `validateTransitions` | `boolean` | | `true` | Validate on record |
-| `trackSessions` | `boolean` | | `true` | Enable session tracking |
-| `maxSessionDuration` | `number` | | — | Max session length (ms) |
-| `sessionTimeoutMs` | `number` | | — | Idle timeout (ms) |
-| `namespace` | `string` | | — | Multi-tenant namespace |
-| `isolationLevel` | `IsolationLevel` | | `'strict'` | Tenant isolation level |
-| `onTransition` | `TransitionCallback` | | — | Transition event |
-| `onPrediction` | `PredictionCallback` | | — | Prediction event |
-| `onSessionStart` | `SessionCallback` | | — | Session start event |
-| `onSessionEnd` | `SessionEndCallback` | | — | Session end event |
-| `onError` | `ErrorCallback` | | — | Error event |
+| Parameter             | Type                                    | Required | Default    | Description              |
+|-----------------------|-----------------------------------------|----------|------------|--------------------------|
+| `procedural`          | `ProceduralGraphInterface`              | ✅        | —          | Static procedural graph  |
+| `predictive`          | `PredictiveGraphInterface`              | ✅        | —          | Dynamic predictive graph |
+| `activity`            | `ActivityTrackerInterface`              |          | —          | Opt-in activity tracking |
+| `eventPersistence`    | `EventStorePersistenceAdapterInterface` |          | —          | Opt-in event persistence |
+| `validateTransitions` | `boolean`                               |          | `true`     | Validate on record       |
+| `trackSessions`       | `boolean`                               |          | `true`     | Enable session tracking  |
+| `maxSessionDuration`  | `number`                                |          | —          | Max session length (ms)  |
+| `sessionTimeoutMs`    | `number`                                |          | —          | Idle timeout (ms)        |
+| `namespace`           | `string`                                |          | —          | Multi-tenant namespace   |
+| `isolationLevel`      | `IsolationLevel`                        |          | `'strict'` | Tenant isolation level   |
+| `onTransition`        | `TransitionCallback`                    |          | —          | Transition event         |
+| `onPrediction`        | `PredictionCallback`                    |          | —          | Prediction event         |
+| `onSessionStart`      | `SessionCallback`                       |          | —          | Session start event      |
+| `onSessionEnd`        | `SessionEndCallback`                    |          | —          | Session end event        |
+| `onError`             | `ErrorCallback`                         |          | —          | Error event              |
 
 #### createActivityTracker(config? ): ActivityTrackerInterface
 
@@ -1959,13 +1959,13 @@ Creates an activity tracker for engagement-aware predictions.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `idleThreshold` | `number` | | `30000` | Idle threshold (ms) |
-| `awayThreshold` | `number` | | `300000` | Away threshold (ms) |
-| `trackVisibility` | `boolean` | | `true` | Use Page Visibility API |
-| `onEngagementChange` | callback | | — | Engagement change event |
-| `onDwellComplete` | callback | | — | Dwell complete event |
+| Parameter            | Type      | Required | Default  | Description             |
+|----------------------|-----------|----------|----------|-------------------------|
+| `idleThreshold`      | `number`  |          | `30000`  | Idle threshold (ms)     |
+| `awayThreshold`      | `number`  |          | `300000` | Away threshold (ms)     |
+| `trackVisibility`    | `boolean` |          | `true`   | Use Page Visibility API |
+| `onEngagementChange` | callback  |          | —        | Engagement change event |
+| `onDwellComplete`    | callback  |          | —        | Dwell complete event    |
 
 #### createWorkflowBuilder(options? ): WorkflowBuilderInterface
 
@@ -1985,63 +1985,63 @@ Creates a context formatter for LLM integration.
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `maxRecentEvents` | `number` | | `10` | Max events to include |
-| `includePatterns` | `boolean` | | `false` | Include pattern analysis |
-| `includeDwell` | `boolean` | | `true` | Include dwell times |
-| `getNodeLabel` | `(nodeId: string) => string` | | identity | Node label resolver |
+| Parameter         | Type                         | Required | Default  | Description              |
+|-------------------|------------------------------|----------|----------|--------------------------|
+| `maxRecentEvents` | `number`                     |          | `10`     | Max events to include    |
+| `includePatterns` | `boolean`                    |          | `false`  | Include pattern analysis |
+| `includeDwell`    | `boolean`                    |          | `true`   | Include dwell times      |
+| `getNodeLabel`    | `(nodeId: string) => string` |          | identity | Node label resolver      |
 
 **Returns:** `ActionLoopContextFormatterInterface`
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `format(predictions, events, options?)` | `ActionLoopLLMContext` | Format state for LLM |
-| `toNaturalLanguage(context)` | `string` | Convert to natural language |
-| `toJSON(context)` | `string` | Convert to JSON string |
+| Method                                  | Returns                | Description                 |
+|-----------------------------------------|------------------------|-----------------------------|
+| `format(predictions, events, options?)` | `ActionLoopLLMContext` | Format state for LLM        |
+| `toNaturalLanguage(context)`            | `string`               | Convert to natural language |
+| `toJSON(context)`                       | `string`               | Convert to JSON string      |
 
 ### ProceduralGraphInterface
 
 #### Accessor Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getNode(id)` | `Node \| undefined` | Get node by ID |
-| `getNodes()` | `readonly Node[]` | Get all nodes |
-| `hasNode(id)` | `boolean` | Check if node exists |
-| `getTransitions(from)` | `readonly Transition[]` | Get outgoing transitions |
-| `getTransitionsTo(to)` | `readonly Transition[]` | Get incoming transitions |
-| `getAllTransitions()` | `readonly Transition[]` | Get all transitions |
-| `hasTransition(from, to)` | `boolean` | Check if transition exists |
-| `getTransition(from, to)` | `Transition \| undefined` | Get specific transition |
-| `getProcedure(id)` | `Procedure \| undefined` | Get procedure by ID |
-| `getProcedures()` | `readonly Procedure[]` | Get all procedures |
-| `hasProcedure(id)` | `boolean` | Check if procedure exists |
-| `getStats()` | `GraphStats` | Get graph statistics |
-| `isStartNode(id)` | `boolean` | Check if start node |
-| `isEndNode(id)` | `boolean` | Check if end node |
-| `getStartNodes()` | `readonly string[]` | Get all start nodes |
-| `getEndNodes()` | `readonly string[]` | Get all end nodes |
-| `getVersion()` | `GraphVersion \| undefined` | Get graph version |
+| Method                    | Returns                     | Description                |
+|---------------------------|-----------------------------|----------------------------|
+| `getNode(id)`             | `Node \| undefined`         | Get node by ID             |
+| `getNodes()`              | `readonly Node[]`           | Get all nodes              |
+| `hasNode(id)`             | `boolean`                   | Check if node exists       |
+| `getTransitions(from)`    | `readonly Transition[]`     | Get outgoing transitions   |
+| `getTransitionsTo(to)`    | `readonly Transition[]`     | Get incoming transitions   |
+| `getAllTransitions()`     | `readonly Transition[]`     | Get all transitions        |
+| `hasTransition(from, to)` | `boolean`                   | Check if transition exists |
+| `getTransition(from, to)` | `Transition \| undefined`   | Get specific transition    |
+| `getProcedure(id)`        | `Procedure \| undefined`    | Get procedure by ID        |
+| `getProcedures()`         | `readonly Procedure[]`      | Get all procedures         |
+| `hasProcedure(id)`        | `boolean`                   | Check if procedure exists  |
+| `getStats()`              | `GraphStats`                | Get graph statistics       |
+| `isStartNode(id)`         | `boolean`                   | Check if start node        |
+| `isEndNode(id)`           | `boolean`                   | Check if end node          |
+| `getStartNodes()`         | `readonly string[]`         | Get all start nodes        |
+| `getEndNodes()`           | `readonly string[]`         | Get all end nodes          |
+| `getVersion()`            | `GraphVersion \| undefined` | Get graph version          |
 
 #### Validation Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `validate()` | `readonly ValidationResult[]` | Run all validations |
-| `isValid()` | `boolean` | Check if graph is valid |
+| Method       | Returns                       | Description             |
+|--------------|-------------------------------|-------------------------|
+| `validate()` | `readonly ValidationResult[]` | Run all validations     |
+| `isValid()`  | `boolean`                     | Check if graph is valid |
 
 #### Export Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
+| Method     | Returns                   | Description              |
+|------------|---------------------------|--------------------------|
 | `export()` | `ExportedProceduralGraph` | Export for serialization |
 
 #### Lifecycle Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `destroy()` | `void` | Cleanup resources |
+| Method      | Returns | Description       |
+|-------------|---------|-------------------|
+| `destroy()` | `void`  | Cleanup resources |
 
 ### PredictiveGraphInterface
 
@@ -2077,118 +2077,118 @@ Creates a context formatter for LLM integration.
 
 #### Persistence Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `saveWeights()` | `Promise<void>` | Save to persistence adapter |
+| Method          | Returns            | Description                   |
+|-----------------|--------------------|-------------------------------|
+| `saveWeights()` | `Promise<void>`    | Save to persistence adapter   |
 | `loadWeights()` | `Promise<boolean>` | Load from persistence adapter |
 
 #### Export/Import Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `export()` | `ExportedPredictiveGraph` | Export for persistence |
-| `import(data)` | `void` | Import from export |
+| Method         | Returns                   | Description            |
+|----------------|---------------------------|------------------------|
+| `export()`     | `ExportedPredictiveGraph` | Export for persistence |
+| `import(data)` | `void`                    | Import from export     |
 
 ### WorkflowEngineInterface
 
 #### Core Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `recordTransition(from, to, context)` | `void` | Record a transition |
-| `recordTransitions(transitions)` | `void` | Record multiple transitions |
-| `predictNext(node, context)` | `readonly string[]` | Get predicted next nodes |
-| `predictNextDetailed(node, context)` | `DetailedPrediction` | Get detailed predictions |
+| Method                                | Returns              | Description                 |
+|---------------------------------------|----------------------|-----------------------------|
+| `recordTransition(from, to, context)` | `void`               | Record a transition         |
+| `recordTransitions(transitions)`      | `void`               | Record multiple transitions |
+| `predictNext(node, context)`          | `readonly string[]`  | Get predicted next nodes    |
+| `predictNextDetailed(node, context)`  | `DetailedPrediction` | Get detailed predictions    |
 
 #### Validation Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `isValidTransition(from, to)` | `boolean` | Validate without recording |
-| `getValidTransitions(from)` | `readonly Transition[]` | Get valid transitions |
+| Method                        | Returns                 | Description                |
+|-------------------------------|-------------------------|----------------------------|
+| `isValidTransition(from, to)` | `boolean`               | Validate without recording |
+| `getValidTransitions(from)`   | `readonly Transition[]` | Get valid transitions      |
 
 #### Session Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `startSession(actor, sessionId?)` | `SessionInfo` | Start new session |
-| `getSession(sessionId)` | `SessionInfo \| undefined` | Get session by ID |
-| `getActiveSession(actor)` | `SessionInfo \| undefined` | Get active session |
-| `hasSession(sessionId)` | `boolean` | Check if session exists |
-| `endSession(sessionId, reason)` | `void` | End a session |
-| `resumeSession(sessionId, options)` | `void` | Resume session |
-| `getSessionChain(actor, options?)` | `ActionChain` | Get session history |
-| `truncateChain(sessionId, strategy?)` | `void` | Truncate session chain |
+| Method                                | Returns                    | Description             |
+|---------------------------------------|----------------------------|-------------------------|
+| `startSession(actor, sessionId?)`     | `SessionInfo`              | Start new session       |
+| `getSession(sessionId)`               | `SessionInfo \| undefined` | Get session by ID       |
+| `getActiveSession(actor)`             | `SessionInfo \| undefined` | Get active session      |
+| `hasSession(sessionId)`               | `boolean`                  | Check if session exists |
+| `endSession(sessionId, reason)`       | `void`                     | End a session           |
+| `resumeSession(sessionId, options)`   | `void`                     | Resume session          |
+| `getSessionChain(actor, options?)`    | `ActionChain`              | Get session history     |
+| `truncateChain(sessionId, strategy?)` | `void`                     | Truncate session chain  |
 
 #### Event Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getEvents(filter)` | `Promise<readonly TransitionEvent[]>` | Get events |
-| `getEventCount(filter?)` | `Promise<number>` | Get event count |
+| Method                   | Returns                               | Description     |
+|--------------------------|---------------------------------------|-----------------|
+| `getEvents(filter)`      | `Promise<readonly TransitionEvent[]>` | Get events      |
+| `getEventCount(filter?)` | `Promise<number>`                     | Get event count |
 
 #### Subscription Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `onTransition(callback)` | `Unsubscribe` | Subscribe to transitions |
-| `onPrediction(callback)` | `Unsubscribe` | Subscribe to predictions |
+| Method                     | Returns       | Description                |
+|----------------------------|---------------|----------------------------|
+| `onTransition(callback)`   | `Unsubscribe` | Subscribe to transitions   |
+| `onPrediction(callback)`   | `Unsubscribe` | Subscribe to predictions   |
 | `onSessionStart(callback)` | `Unsubscribe` | Subscribe to session start |
-| `onSessionEnd(callback)` | `Unsubscribe` | Subscribe to session end |
-| `onError(callback)` | `Unsubscribe` | Subscribe to errors |
+| `onSessionEnd(callback)`   | `Unsubscribe` | Subscribe to session end   |
+| `onError(callback)`        | `Unsubscribe` | Subscribe to errors        |
 
 #### Graph Access
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getProceduralGraph()` | `ProceduralGraphInterface` | Get procedural graph |
-| `getPredictiveGraph()` | `PredictiveGraphInterface` | Get predictive graph |
+| Method                 | Returns                                 | Description          |
+|------------------------|-----------------------------------------|----------------------|
+| `getProceduralGraph()` | `ProceduralGraphInterface`              | Get procedural graph |
+| `getPredictiveGraph()` | `PredictiveGraphInterface`              | Get predictive graph |
 | `getActivityTracker()` | `ActivityTrackerInterface \| undefined` | Get activity tracker |
 
 #### Lifecycle Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `destroy()` | `void` | Cleanup resources |
+| Method      | Returns | Description       |
+|-------------|---------|-------------------|
+| `destroy()` | `void`  | Cleanup resources |
 
 ### ActivityTrackerInterface
 
 #### Node Tracking
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `enterNode(nodeId)` | `void` | Start tracking node |
-| `exitNode()` | `DwellRecord \| undefined` | Complete dwell record |
+| Method              | Returns                    | Description           |
+|---------------------|----------------------------|-----------------------|
+| `enterNode(nodeId)` | `void`                     | Start tracking node   |
+| `exitNode()`        | `DwellRecord \| undefined` | Complete dwell record |
 
 #### Accessor Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getEngagementState()` | `EngagementState` | Get current state |
-| `getCurrentNodeId()` | `string \| undefined` | Get current node |
-| `getCurrentDwell()` | `PartialDwellRecord \| undefined` | Get incomplete dwell |
-| `getDwellHistory()` | `readonly DwellRecord[]` | Get all dwells |
-| `getTotalActiveTime()` | `number` | Get total active time |
-| `getTotalIdleTime()` | `number` | Get total idle time |
+| Method                 | Returns                           | Description           |
+|------------------------|-----------------------------------|-----------------------|
+| `getEngagementState()` | `EngagementState`                 | Get current state     |
+| `getCurrentNodeId()`   | `string \| undefined`             | Get current node      |
+| `getCurrentDwell()`    | `PartialDwellRecord \| undefined` | Get incomplete dwell  |
+| `getDwellHistory()`    | `readonly DwellRecord[]`          | Get all dwells        |
+| `getTotalActiveTime()` | `number`                          | Get total active time |
+| `getTotalIdleTime()`   | `number`                          | Get total idle time   |
 
 #### Mutator Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `clearHistory()` | `void` | Clear dwell history |
+| Method           | Returns | Description         |
+|------------------|---------|---------------------|
+| `clearHistory()` | `void`  | Clear dwell history |
 
 #### Subscription Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
+| Method                         | Returns       | Description          |
+|--------------------------------|---------------|----------------------|
 | `onEngagementChange(callback)` | `Unsubscribe` | Subscribe to changes |
-| `onDwellComplete(callback)` | `Unsubscribe` | Subscribe to dwells |
+| `onDwellComplete(callback)`    | `Unsubscribe` | Subscribe to dwells  |
 
 #### Lifecycle Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `destroy()` | `void` | Cleanup resources |
+| Method      | Returns | Description       |
+|-------------|---------|-------------------|
+| `destroy()` | `void`  | Cleanup resources |
 
 ### Types
 

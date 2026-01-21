@@ -41,7 +41,7 @@ import {
 // Implementation
 // ============================================================================
 
-class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
+export class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 	readonly #procedural: ProceduralGraphInterface
 	readonly #predictive: PredictiveGraphInterface
 
@@ -714,32 +714,4 @@ class WorkflowAnalyzer implements WorkflowAnalyzerInterface {
 		this.#analysisCompleteListeners.clear()
 		this.#patternDetectedListeners.clear()
 	}
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a Workflow Analyzer.
- *
- * @param procedural - The procedural graph to analyze
- * @param predictive - The predictive graph with runtime weights
- * @param options - Optional analyzer configuration
- * @returns Workflow analyzer interface
- *
- * @example
- * ```ts
- * import { createWorkflowAnalyzer } from '@mikesaintsg/actionloop'
- *
- * const analyzer = createWorkflowAnalyzer(procedural, predictive)
- * const loops = analyzer.findHotLoops()
- * ```
- */
-export function createWorkflowAnalyzer(
-	procedural:  ProceduralGraphInterface,
-	predictive: PredictiveGraphInterface,
-	options?: WorkflowAnalyzerOptions,
-): WorkflowAnalyzerInterface {
-	return new WorkflowAnalyzer(procedural, predictive, options)
 }

@@ -32,7 +32,7 @@ import {
  * - Document visibility for away detection
  * - Time spent on each node with active/idle breakdown
  */
-class ActivityTracker implements ActivityTrackerInterface {
+export class ActivityTracker implements ActivityTrackerInterface {
 	// Configuration
 	readonly #idleThreshold: number
 	readonly #awayThreshold: number
@@ -388,40 +388,3 @@ class ActivityTracker implements ActivityTrackerInterface {
 		}
 	}
 }
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create an activity tracker for engagement-aware predictions.
- *
- * @param options - Activity tracker configuration
- * @returns Activity tracker interface
- *
- * @example
- * ```ts
- * import { createActivityTracker } from '@mikesaintsg/actionloop'
- *
- * const activity = createActivityTracker({
- *   idleThreshold: 30000,
- *   awayThreshold: 300000,
- *   onEngagementChange: (state, nodeId) => {
- *     console.log(`Engagement: ${state} on ${nodeId}`)
- *   },
- * })
- *
- * // Use with workflow engine
- * const engine = createWorkflowEngine(procedural, predictive, {
- *   activity,
- * })
- * ```
- */
-export function createActivityTracker(
-	options?: ActivityTrackerOptions,
-): ActivityTrackerInterface {
-	return new ActivityTracker(options)
-}
-
-// Re-export isActivityTrackingSupported from helpers for convenience
-export { isActivityTrackingSupported } from '../helpers.js'

@@ -24,15 +24,15 @@ import type {
 	WorkflowBuilderOptions,
 	ProceduralGraphInterface,
 } from '../../types.js'
-import { createProceduralGraph } from '../graphs/procedural.js'
 import { ActionLoopError } from '../../errors.js'
 import { createTransitionKey, deepFreeze, parseYAMLValue } from '../../helpers.js'
+import { ProceduralGraph } from '../graphs/ProceduralGraph'
 
 // ============================================================================
 // Implementation
 // ============================================================================
 
-class WorkflowBuilder implements WorkflowBuilderInterface {
+export class WorkflowBuilder implements WorkflowBuilderInterface {
 	readonly #nodes: Map<string, Node>
 	readonly #transitions: Map<string, Transition>
 	readonly #procedures: Map<string, Procedure>
@@ -451,7 +451,7 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 			)
 		}
 
-		return createProceduralGraph({
+		return new ProceduralGraph({
 			nodes: this.getNodes(),
 			transitions: this.getTransitions(),
 			procedures: this.getProcedures(),
@@ -743,34 +743,8 @@ class WorkflowBuilder implements WorkflowBuilderInterface {
 		this.#nodeAddedListeners.clear()
 		this.#nodeRemovedListeners.clear()
 		this.#transitionAddedListeners.clear()
-		this.#transitionRemovedListeners. clear()
+		this.#transitionRemovedListeners.clear()
 		this.#validationListeners.clear()
 		this.clear()
 	}
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a Workflow Builder.
- *
- * @param options - Optional builder configuration
- * @returns Workflow builder interface
- *
- * @example
- * ```ts
- * import { createWorkflowBuilder } from '@mikesaintsg/actionloop'
- *
- * const builder = createWorkflowBuilder()
- * builder.addNode({ id: 'login' })
- * builder.addTransition({ from: 'login', to: 'dashboard', weight: 1, actor: 'user' })
- * const graph = builder.build()
- * ```
- */
-export function createWorkflowBuilder(
-	options?:  WorkflowBuilderOptions,
-): WorkflowBuilderInterface {
-	return new WorkflowBuilder(options)
 }

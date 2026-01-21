@@ -30,7 +30,7 @@ import {
 /**
  * Context formatter for converting ActionLoop state to LLM-consumable context.
  */
-class ContextFormatter implements ActionLoopContextFormatterInterface {
+export class ContextFormatter implements ActionLoopContextFormatterInterface {
 	readonly #maxRecentEvents: number
 	readonly #includePatterns: boolean
 	readonly #includeDwell: boolean
@@ -287,38 +287,4 @@ function findRepeatedSequences(
 	}
 
 	return sequences
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create an ActionLoop context formatter for LLM integration.
- *
- * @param options - Optional formatter configuration
- * @returns Context formatter interface
- *
- * @example
- * ```ts
- * import { createActionLoopContextFormatter } from '@mikesaintsg/actionloop'
- *
- * const formatter = createActionLoopContextFormatter({
- *   maxRecentEvents: 10,
- *   includePatterns: true,
- *   getNodeLabel: (nodeId) => graph.getNode(nodeId)?.label ?? nodeId,
- * })
- *
- * const predictions = engine.predictNextDetailed(currentNode, context)
- * const events = await engine.getEvents({ sessionId, limit: 20 })
- * const llmContext = formatter.format(predictions, events)
- *
- * // Use in prompt
- * const prompt = formatter.toNaturalLanguage(llmContext)
- * ```
- */
-export function createActionLoopContextFormatter(
-	options?: ContextFormatterOptions,
-): ActionLoopContextFormatterInterface {
-	return new ContextFormatter(options)
 }
